@@ -16,6 +16,7 @@
 
   <div class="tool-box">
     <el-button  @click="setMotorInitialPoint"> 设置机械零点 </el-button>
+    <el-button @click="trigger()"></el-button>
   </div>
 
   <div id="scene"></div>
@@ -95,12 +96,19 @@
   </div>
 
   
+
+
+
+
+  
 </template>
 <script setup>
 import motor3d from "./utils/motor3d";
 import { nextTick, onMounted, ref, watchEffect, render, h } from "vue";
 
 import { generateCMD, Loc_Director, double2floatCode } from "./utils/CyberGear.js"
+
+import { drawBezierCurve, getCmdSeries } from "./utils/BezierCurve.js"
 
 
 /**
@@ -151,28 +159,71 @@ onMounted(() => {
 
   // BleCharacteristic.writeValue(cmdFrame);
   //   console.log("---指令发送成功---");
-  double2floatCode(0.001);
+  // double2floatCode(0.001);
+  // function test() {
+  //   console.log('--test: ', arguments);
+  // }
+
+  // drawBezierCurve([.9,.13], [.88,.28]);(.17,.67,.83,.67)
+  drawBezierCurve([.17,.67], [.83,.67]);
+
+
+  // getCmdSeries( { p1: [.9,.13], p2: [.88,.28] }, 3, 2, 21, rotateMotor);
+
+  // drawBezierCurve([.42,.42], [.58,.58]);
 });
 
+
+function trigger() {
+  // getCmdSeries( { p1: [.9,.13], p2: [.88,.28] }, 180, 5, 23, rotateMotor);
+  getCmdSeries({
+    // cubicBezier: {p1: [.9,.13], p2: [.88,.28]},
+    cubicBezier: {p1: [.17,.67], p2: [.83,.67]},
+    rotateDeg: 360,
+    duration: 3,
+    motorId: 23,
+    sendBleMsg: rotateMotor,
+    baseRotate: 0, // 从某个角度开始
+  });
+}
+
+/**
+ * @description 旋转电机
+ * @param {
+    motorId: ,
+    limit_spd: ,
+    loc_ref: 传入的是角度 比如180，程序里会做转换将其转为rad
+  } 
+ */
 function rotateMotor({motorId, limit_spd, loc_ref}) {
+
+  // debugger;
   // motorId, limit_spd;
   // let a =  loc_ref * 0.017;
   // debugger;
   let rad = loc_ref * Math.PI / 180
+  if(limit_spd !== 2 && limit_spd !== 5) { // 暂时兼容原来的写法， 传入的是5rad
+    // 现在贝塞尔曲线传入的角度，所以需要做个转换，且最大转速不超过30
+    limit_spd = limit_spd * Math.PI / 180;
+    console.warn('速度: ', limit_spd);
+  }
+
+
   // let cmdArr = Loc_Director({motorId, limit_spd, loc_ref: loc_ref * 0.017});
   let cmdArr = Loc_Director({motorId, limit_spd, loc_ref: rad});
   console.log('---cmdArr: ', cmdArr);
   for(let i = 0; i < cmdArr.length; i++) {
     setTimeout(() => {
-      try {
-        BleCharacteristic.writeValue(cmdArr[i]);
+      try {  
+        // BleCharacteristic.writeValue(cmdArr[i]);
+        BleCharacteristic.writeValueWithoutResponse(cmdArr[i]);
         console.log("---指令发送成功---", cmdArr[i]);
         recordCmd.value.push({type: 'send', data: cmdArr[i], status: 'success'});
       } catch (error) {
         console.log("---指令发送失败---", cmdArr[i]);
         recordCmd.value.push({type: 'send', data: cmdArr[i], status: 'fail'});
       }
-    }, i * 300)
+    }, 15)
     
   }
 }
@@ -377,7 +428,8 @@ function cmdVal(type, position) {
   
   console.log(cmdFrame);
   try {
-    BleCharacteristic.writeValue(cmdFrame);
+    // BleCharacteristic.writeValue(cmdFrame);
+    BleCharacteristic.writeValueWithoutResponse(cmdFrame);
     console.log("---指令发送成功---");
     recordCmd.value.push({type: 'send', data: cmdFrame, status: 'success'});
   } catch (error) {
