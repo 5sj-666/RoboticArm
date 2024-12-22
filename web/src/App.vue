@@ -14,6 +14,9 @@
     <button @click="testMode">测试位置模式</button>
   </div> -->
 
+  <keyframeDialog v-model:visible="showKeyframe" />
+  <el-button @click="showKeyframe = true">打开</el-button>
+
   <div class="tool-box">
     <el-button  @click="setMotorInitialPoint"> 设置机械零点 </el-button>
     <el-button @click="trigger()"></el-button>
@@ -109,6 +112,10 @@ import { nextTick, onMounted, ref, watchEffect, render, h } from "vue";
 import { generateCMD, Loc_Director, double2floatCode } from "./utils/CyberGear.js"
 
 import { drawBezierCurve, getCmdSeries } from "./utils/BezierCurve.js"
+
+import keyframeDialog from "./components/keyframeDialog.vue";
+
+let showKeyframe = ref(false);
 
 
 /**
