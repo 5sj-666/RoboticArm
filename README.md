@@ -13,4 +13,4 @@
 1. npm install
 2. npm run dev
 
-！[image](assets/example.png)
+![image](assets/example.png)
