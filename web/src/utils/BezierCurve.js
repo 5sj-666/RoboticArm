@@ -1,4 +1,4 @@
-function bezierCurve(p1, p2, t) {
+export function bezierCurve(p1, p2, t) {
   // 定义起始点和结束点
   var p0 = [0, 0];
   var p3 = [1, 1];
@@ -18,7 +18,7 @@ function bezierCurve(p1, p2, t) {
  * @param { number } count 坐标点的个数
  * @returns { Array<object> } e.g: [{speed: 0.5, rotate: 0.5, duration: 0.5}]
  */
-function getCubicCoordsState(p1, p2, count) {
+export function getCubicCoordsState(p1, p2, count) {
   let preCoord = [0, 0];
   let cubicCoordData = [];
 
@@ -30,7 +30,7 @@ function getCubicCoordsState(p1, p2, count) {
 
     cubicCoordData.push({
       speed: (coordinate[1] - preCoord[1]) / (coordinate[0] - preCoord[0]),
-      rotate: coordinate[1],
+      process: coordinate[1],
       duration: preCoord[0],
     });
 
@@ -59,18 +59,21 @@ export function getCmdSeries({
   }) {
 
   let cubicCoordData = getCubicCoordsState(cubicBezier.p1, cubicBezier.p2, 10);
-  let avgSpeed = rotateDeg / duration;
+  let avgSpeed = rotateDeg / 360 / duration * 1000;
+  console.warn("--cubicCoordData: ", cubicCoordData, '--avgSpeed: ', avgSpeed);
   
 
-  cubicCoordData.forEach(item => {
+  cubicCoordData.forEach((item, index) => {
+    let nextItem = cubicCoordData[index + 1] || {duration: 1};
     let speed = item.speed * avgSpeed;
-    let time = item.duration * duration;
-    let rotate = item.rotate * rotateDeg;
+    let time = nextItem.duration * duration;
+    let rotate = item.process * rotateDeg;
 
     setTimeout(() => {
-      console.warn('---speed: ', speed, '---duration: ', time, '---rotate: ', rotate);
+      console.warn(JSON.stringify(`'---speed: ', ${speed}, '---duration: ', ${time}, '---rotate: ', ${rotate / 180 * Math.PI}`));
+      // limit_spd = limit_spd * Math.PI / 180;
       sendBleMsg({ motorId: motorId, limit_spd: speed, loc_ref: baseRotate + rotate });
-    }, time * 1000);
+    }, time);
 
   });
 
@@ -98,8 +101,8 @@ export function drawBezierCurve(p1, p2, splitCount = 10) {
     canvas.style.backgroundColor = "black";
     canvas.style.border = "1px solid #FFF";
     canvas.style.position = "absolute";
-    canvas.style.left = "10px";
-    canvas.style.top = "10px";
+    canvas.style.left = "50px";
+    canvas.style.top = "50px";
 
     let body = document.querySelector("body");
     body.appendChild(canvas);

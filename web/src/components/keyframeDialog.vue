@@ -15,13 +15,25 @@
         <div style="width: 30%">
           <div>电机id: 32</div>
           <div>当前状态: </div>
-          <div>时间: </div>
+          <div>时间区间: 
+            <div>
+              开始时间/s: <input type="text" v-model="startTime" />
+            </div>
+            <div>
+              结束时间/s: <input type="text" v-model="endTime" />
+            </div>
+            
+          </div>
+          <div>
+            旋转角度： <input type="text" v-model="rotateDeg" />
+          </div>
         </div>
         
         <div style="flex: 1">
           <div>贝塞尔曲线</div>
           <div class="bezier-example">
-            <div ref="refBezierExample">1</div>
+            <!-- <div ref="refBezierExample">1</div> -->
+            <Track :bezier="interactBezierStr" />
           </div>
           <div class="cubic-ctrl-container" style="display: flex; justify-content: flex-start;">
             <div  style="width: 60px; display: flex;  flex-direction: column; justify-content: space-around;flex-shrink: 0; margin-left: 20px;">
@@ -98,6 +110,7 @@
 
 
       </div> -->
+      <el-button @click="addKeyData">添加</el-button>
     </div>
     <template #footer>
       <div class="dialog-footer">
@@ -114,6 +127,10 @@
   import CubicBezier from "./CubicBezier/index.vue";
   import { nextTick, ref } from "vue";
 
+  import { getCmdSeries } from "../utils/BezierCurve.js"
+
+  import Track from "./CubicBezier/track.vue";
+
   // const props = defineProps({
   //   visible: {
   //     type: Boolean,
@@ -125,6 +142,11 @@
   // })
   const [visible, visibleModifiers] = defineModel('visible');
   console.log('visible', visible, visibleModifiers);
+
+  let startTime = ref();
+  let endTime = ref();
+
+  let rotateDeg = ref(0);
 
   // function update() {
   //   model.value++
@@ -139,7 +161,7 @@
   //   }
   // })
 
-  let interactBezierStr = ref("ease-in");
+  let interactBezierStr = ref("0.9, 0.13, 0.88, 0.28"); //ease-in
 
   function setInteractBezierStr(str) {
     interactBezierStr.value = str;
@@ -154,18 +176,101 @@
 
   const refBezierExample = ref(null);
 
+  // let currentBezier = ref("ease-in");
+
   //问题:  transitionTimingFunction不生效
   function newBezierFunc(bezierStr) {
     // bezierStr;
     // debugger;
-    refBezierExample.value.style = `transition: all 0s linear; transform: translate(0, 0);`;
+    // refBezierExample.value.style = `transition: all 0s linear; transform: translate(0, 0);`;
     console.log('newBezierFunc', bezierStr);
-    setTimeout(() => {
-      refBezierExample.value.style = `transition: all 1s; transitionTimingFunction: ${bezierStr}; transform: translate(480px, 0); `;
+    // setInteractBezierStr(`${bezierStr.p1[0]}, ${bezierStr.p1[1]}, ${bezierStr.p2[0]}, ${bezierStr.p2[1]}`);
+    // currentBezier.value = bezierStr;
+    // setTimeout(() => {
+    //   refBezierExample.value.style = `transition: all 1s; transitionTimingFunction: ${bezierStr}; transform: translate(480px, 0); `;
       
-      console.log( `transition: all 1s; transitionTimingFunction: ${bezierStr}; transform: translate(480px, 0); `)
-      // debugger;
-    }, 0.5 * 1000);
+    //   console.log( `transition: all 1s; transitionTimingFunction: ${bezierStr}; transform: translate(480px, 0); `)
+    //   // debugger;
+    // }, 0.5 * 1000);
+  }
+
+
+  let keyData = ref([]);
+  function generatorKeyData() {
+    return {
+      timeSpan: [startTime.value, endTime.value],
+      bezier: currentBezier.value,
+      motorId: 32,
+    }
+  }
+
+  function addKeyData() {
+    keyData.value.push(generatorKeyData());
+    execKeyData();
+  }
+
+  function execKeyData() {
+    console.log('execKeyData', keyData.value);
+
+    keyData.value.forEach((item, index) => {
+      setTimeout(() => {
+        let data = {
+          cubicBezier: item.bezier,
+          // rotateDeg: rotateDeg.value,
+          // cubicBezier: { p1: [0.9, 0.13], p2: [0.88, 0.28]},
+          rotateDeg: 180,
+          duration: (parseInt(endTime.value) - parseInt(startTime.value) ),
+          motorId: item.motorId,
+          // sendBleMsg: rotateMotor,
+          sendBleMsg: (params)=> {
+            // console.log('sendBleMsg', params);
+          },
+          baseRotate: 0, // 从某个角度开始
+        };
+
+        console.log('data', data);
+
+        getCmdSeries(data);
+
+      }, parseInt(startTime.value) * 1000);
+      
+
+   
+      // getCmdSeries({
+      //   // cubicBezier: item.bezier, 
+      //   cubicBezier: {
+      //     p1: {x: 130.8, y: 270},
+      //     p2: {x: 270, y: 30}
+      //   },
+      //   // rotateDeg: rotateDeg.value,
+      //   rotateDeg: 180,
+      //   duration: parseInt(startTime.value),
+      //   motorId: item.motorId,
+      //   // sendBleMsg: rotateMotor,
+      //   sendBleMsg: (params)=> {
+      //     console.log('sendBleMsg', params);
+      //   },
+      //   baseRotate: 0, // 从某个角度开始
+      // });
+
+      // getCmdSeries({
+      //   // cubicBezier: {p1: [.17,.67], p2: [.83,.67]},
+      //   cubicBezier: item.bezier,
+      //   rotateDeg: 360,
+      //   duration: 3,
+      //   motorId: 23,
+      //   sendBleMsg: (params)=> {
+      //     console.log('sendBleMsg', params);
+      //   },
+      //   baseRotate: 0, // 从某个角度开始
+      // });
+
+
+
+
+    });
+
+
   }
 
 </script>

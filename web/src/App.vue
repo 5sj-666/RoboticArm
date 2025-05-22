@@ -1,4 +1,5 @@
 <template>
+  <section style="width: 100%; height: 100%; position: relative;">
   <!-- <div class="tool-box">
     <button @click="handleBlueTooth">连接蓝牙</button>
 
@@ -15,21 +16,78 @@
   </div> -->
 
   <keyframeDialog v-model:visible="showKeyframe" />
-  <el-button @click="showKeyframe = true">打开</el-button>
+  
 
   <div class="tool-box">
-    <el-button  @click="setMotorInitialPoint"> 设置机械零点 </el-button>
-    <el-button @click="trigger()"></el-button>
+    <el-button @click="showKeyframe = true">打开</el-button>
+    <el-button @click="setMotorInitialPoint"> 设置机械零点 </el-button>
+    <el-button @click="trigger()">触发</el-button>
+
+    <el-button>测试抽屉</el-button>
+
+    启用贝塞尔曲线优化动作：
+    <el-switch
+      v-model="enableBezier"
+      class="mb-2"
+      active-text="启用"
+      inactive-text="关闭"
+    />
+
+    <el-button 
+      primary 
+      @click="rotateMotor({motorId: 22, limit_spd: 2, loc_ref: armTopAngle})"
+    >更改速度</el-button>
+
+
+    <el-switch
+      v-model="motorEnable"
+      class="mb-2"
+      active-text="使能"
+      inactive-text="停止"
+      @change="motorEnableChange"
+    />
+    
   </div>
 
   <div id="scene"></div>
 
   <div class="toggle-box">
     <div>蓝牙连接: {{ bleConnecting ? "已连接" : "已断开" }}</div>
-    <div>旋转角度(0 - 360)</div>
+    <!-- <div>旋转角度(0 - 360)</div> -->
 
     <div class="slider-demo-block">
-      <span class="demonstration">上臂： </span>
+      <span class="demonstration">five: </span>
+      <el-slider
+        v-model="armFiveAngle"
+        :min="-180"
+        :max="180"
+        :step="1"
+        show-stops
+        :marks="{
+          '-180': { style: { color: '#ddd' }, label: '-180 deg' },
+          0: { style: { color: '#ddd' }, label: '0 deg' },
+          180: { style: { color: '#ddd' }, label: '180 deg' },
+        }"
+      />
+    </div>
+    <div class="slider-demo-block">
+      <span class="demonstration">four: </span>
+      <el-slider
+        v-model="armFourAngle"
+        :min="-180"
+        :max="180"
+        :step="1"
+        show-stops
+        :marks="{
+          '-180': { style: { color: '#ddd' }, label: '-180 deg' },
+          0: { style: { color: '#ddd' }, label: '0 deg' },
+          180: { style: { color: '#ddd' }, label: '180 deg' },
+        }"
+      />
+    </div>
+
+    <div class="slider-demo-block">
+      <span class="demonstration">three： </span>
       <el-slider
         v-model="armTopAngle"
         :min="-180"
@@ -41,12 +99,12 @@
           0: { style: { color: '#ddd' }, label: '0 deg' },
           180: { style: { color: '#ddd' }, label: '180 deg' },
         }"
-        @change="rotateMotor({motorId: 23, limit_spd: 2, loc_ref: armTopAngle})"
+        @change="rotateMotor({motorId: 22, limit_spd: 5, loc_ref: armTopAngle})"
       />
     </div>
 
     <div class="slider-demo-block">
-      <span class="demonstration">中臂： </span>
+      <span class="demonstration">two： </span>
       <el-slider
         v-model="armCenterAngle"
         :min="-120"
@@ -58,12 +116,12 @@
           0: { style: { color: '#ddd' }, label: '0 deg' },
           120: { style: { color: '#ddd' }, label: '120 deg' },
         }"
-        @change="rotateMotor({motorId: 22, limit_spd: 2, loc_ref: armCenterAngle})"
+        @change="rotateMotor({motorId: 23, limit_spd: 2, loc_ref: armCenterAngle})"
       />
     </div>
 
     <div class="slider-demo-block">
-      <span class="demonstration">下臂： </span>
+      <span class="demonstration">one： </span>
       <el-slider
         v-model="armBottomAngle"
         :min="-180"
@@ -98,24 +156,38 @@
     </el-table-v2>
   </div>
 
+
   
+</section>
 
-
-
-
+  
   
 </template>
 <script setup>
 import motor3d from "./utils/motor3d";
 import { nextTick, onMounted, ref, watchEffect, render, h } from "vue";
 
-import { generateCMD, Loc_Director, double2floatCode } from "./utils/CyberGear.js"
+import { generateCMD, Loc_Director, parse_cmd, numToUnit8Array, enable_Director, disable_Director } from "./utils/CyberGear.js"
 
 import { drawBezierCurve, getCmdSeries } from "./utils/BezierCurve.js"
 
 import keyframeDialog from "./components/keyframeDialog.vue";
 
 let showKeyframe = ref(false);
+
+/* --- */
+import { useCounterStore } from './stores/index.js'
+
+const counter = useCounterStore()
+
+// counter.testCount++
+// // 自动补全！ ✨
+// counter.$patch({ testCount: counter.testCount + 1 })
+// // 或使用 action 代替
+// counter.increment()
+
+console.log("---pinia: ", counter);
+/* --- */
 
 
 /**
@@ -132,13 +204,13 @@ function setMotorInitialPoint() {
         console.log("---指令发送成功---");
         recordCmd.value.push({type: 'send', data: cmdFrame, status: 'success'});
       } catch (error) {
-        ElNotification({
-          title: "蓝牙",
-          message: bleConnecting.value ? error : '请连接蓝牙',
-          position: "bottom-right",
-          type: "error",
-          duration: 0,
-        });
+        // ElNotification({
+        //   title: "蓝牙",
+        //   message: bleConnecting.value ? error : '请连接蓝牙',
+        //   position: "bottom-right",
+        //   type: "error",
+        //   duration: 0,
+        // });
         console.warn("---指令发送失败---");
         recordCmd.value.push({type: 'send', data: cmdFrame, status: 'fail'});
       } 
@@ -159,6 +231,9 @@ let recordCmd = ref([]);
 
 
 onMounted(() => {
+  // let info = parse_cmd();
+  // console.log('---info: ', info);
+
   armInstance.value = new motor3d("#scene");
   console.log("--armInstance：", armInstance);
 
@@ -172,7 +247,8 @@ onMounted(() => {
   // }
 
   // drawBezierCurve([.9,.13], [.88,.28]);(.17,.67,.83,.67)
-  drawBezierCurve([.17,.67], [.83,.67]);
+  // 绘制贝塞尔曲线到html节点下
+  // drawBezierCurve([.17,.67], [.83,.67]);
 
 
   // getCmdSeries( { p1: [.9,.13], p2: [.88,.28] }, 3, 2, 21, rotateMotor);
@@ -186,9 +262,9 @@ function trigger() {
   getCmdSeries({
     // cubicBezier: {p1: [.9,.13], p2: [.88,.28]},
     cubicBezier: {p1: [.17,.67], p2: [.83,.67]},
-    rotateDeg: 360,
-    duration: 3,
-    motorId: 23,
+    rotateDeg: 180,
+    duration: 1 * 1000,
+    motorId: 22,
     sendBleMsg: rotateMotor,
     baseRotate: 0, // 从某个角度开始
   });
@@ -208,64 +284,45 @@ function rotateMotor({motorId, limit_spd, loc_ref}) {
   // motorId, limit_spd;
   // let a =  loc_ref * 0.017;
   // debugger;
-  let rad = loc_ref * Math.PI / 180
-  if(limit_spd !== 2 && limit_spd !== 5) { // 暂时兼容原来的写法， 传入的是5rad
-    // 现在贝塞尔曲线传入的角度，所以需要做个转换，且最大转速不超过30
-    limit_spd = limit_spd * Math.PI / 180;
-    console.warn('速度: ', limit_spd);
-  }
+  let rad = loc_ref * Math.PI / 180;
+  //  // 现在贝塞尔曲线传入的角度，所以需要做个转换，且最大转速不超过10
+  // if(enableBezier.value) {
+  //   limit_spd = limit_spd * Math.PI / 180;
+  // }
+  // if(limit_spd !== 2 && limit_spd !== 5) { // 暂时兼容原来的写法， 传入的是5rad
+  //   // 现在贝塞尔曲线传入的角度，所以需要做个转换，且最大转速不超过30
+  //   limit_spd = limit_spd * Math.PI / 180;
+  //   console.warn('速度: ', limit_spd);
+  // }
+  // limit_spd = limit_spd * Math.PI / 180;
 
 
   // let cmdArr = Loc_Director({motorId, limit_spd, loc_ref: loc_ref * 0.017});
   let cmdArr = Loc_Director({motorId, limit_spd, loc_ref: rad});
-  console.log('---cmdArr: ', cmdArr);
+  // console.log('---cmdArr: ', cmdArr);
   for(let i = 0; i < cmdArr.length; i++) {
-    setTimeout(() => {
-      try {  
-        // BleCharacteristic.writeValue(cmdArr[i]);
-        BleCharacteristic.writeValueWithoutResponse(cmdArr[i]);
-        console.log("---指令发送成功---", cmdArr[i]);
-        recordCmd.value.push({type: 'send', data: cmdArr[i], status: 'success'});
-      } catch (error) {
-        console.log("---指令发送失败---", cmdArr[i]);
-        recordCmd.value.push({type: 'send', data: cmdArr[i], status: 'fail'});
-      }
-    }, 15)
-    
+    setTimeout(() => { bleSend(cmdArr[i]); }, 15)
   }
 }
-
-// function testMode() {
-//   let cmdArr = Loc_Director({motorId: 21, limit_spd: 1.5, loc_ref: 1.3});
-//   console.log('---cmdArr: ', cmdArr);
-//   // cmdArr; 
-//   // debugger;
-//   for(let i = 0; i < cmdArr.length; i++) {
-//     setTimeout(() => {
-//       try {
-//         BleCharacteristic.writeValue(cmdArr[i]);
-//         console.log("---指令发送成功---", cmdArr[i]);
-//         recordCmd.value.push({type: 'send', data: cmdArr[i], status: 'success'});
-//       } catch (error) {
-//         console.log("---指令发送失败---", cmdArr[i]);
-//         recordCmd.value.push({type: 'send', data: cmdArr[i], status: 'fail'});
-//       }
-//     }, i * 1000)
-    
-//   }
-// }
 
 let armBottomAngle = ref(0);
 let armCenterAngle = ref(0);
 let armTopAngle = ref(0);
 
+let armFourAngle = ref(0);
+let armFiveAngle = ref(0);
+
+
 watchEffect(() => {
-  console.log('角度： ', armBottomAngle.value, armCenterAngle.value, armTopAngle.value);
-  console.log('角度： ', -(armBottomAngle.value * Math.PI) / 180, -(armCenterAngle.value * Math.PI) / 180, -(armTopAngle.value * Math.PI) / 180);
+  // console.log('角度： ', armBottomAngle.value, armCenterAngle.value, armTopAngle.value);
+  // console.log('角度： ', -(armBottomAngle.value * Math.PI) / 180, -(armCenterAngle.value * Math.PI) / 180, -(armTopAngle.value * Math.PI) / 180);
+  // debugger; 
   if (armInstance.value) {
     armInstance.value.angle_bottom = -(armBottomAngle.value * Math.PI) / 180;
     armInstance.value.angle_center = -(armCenterAngle.value * Math.PI) / 180;
     armInstance.value.angle_top = -(armTopAngle.value * Math.PI) / 180;
+    armInstance.value.angle_four = -(armFourAngle.value * Math.PI) / 180;
+    armInstance.value.angle_five = -(armFiveAngle.value * Math.PI) / 180;
   }
 });
 
@@ -355,11 +412,12 @@ async function handleBlueTooth() {
   characteristic.addEventListener("characteristicvaluechanged", (e) => {
     try{
       console.log("蓝牙Notification通知: ", e, "值:");
-      let CAN_frame_data = Array.from(new Uint8Array(e.target.value.buffer)).map(
-        (num) => {
-          return num.toString(16);
-        }
-      );
+      let CAN_frame_data = Array.from(new Uint8Array(e.target.value.buffer));
+      // .map(
+      //   (num) => {
+      //     return "0x" + num.toString(16);
+      //   }
+      // );
       recordCmd.value.push({type: 'receive', data: CAN_frame_data, status: 'received'});
     } catch(error) {
       console.error("蓝牙Notification通知错误: ", error);
@@ -434,23 +492,27 @@ function cmdVal(type, position) {
   let cmdFrame = generateCMD(type, {position});
   
   console.log(cmdFrame);
+  bleSend(cmdFrame);
+
+}
+
+function bleSend(cmdFrame) {
   try {
     // BleCharacteristic.writeValue(cmdFrame);
     BleCharacteristic.writeValueWithoutResponse(cmdFrame);
     console.log("---指令发送成功---");
     recordCmd.value.push({type: 'send', data: cmdFrame, status: 'success'});
   } catch (error) {
-    ElNotification({
-      title: "蓝牙",
-      message: bleConnecting.value ? error : '请连接蓝牙',
-      position: "bottom-right",
-      type: "error",
-      duration: 0,
-    });
+    // ElNotification({
+    //   title: "蓝牙",
+    //   message: bleConnecting.value ? error : '请连接蓝牙',
+    //   position: "bottom-right",
+    //   type: "error",
+    //   duration: 0,
+    // });
     console.warn("---指令发送失败---");
     recordCmd.value.push({type: 'send', data: cmdFrame, status: 'fail'});
   }
-
 }
 
 // 使用队列，存放指令的顺序列表， 以完成一个动作， 使用建造者模式，
@@ -483,38 +545,27 @@ const columns = ref([
   },
   {
     key: 'data',
-    title: '帧id',
+    title: '',
     dataKey: 'data',
-    width: 120,
+    width: 420,
     align: 'center',
     // 因为是 Unit8Array类型
-    cellRenderer: ({ cellData }) => Array.from(cellData).slice(0, 4).join(','),
-    // flexGrow: true
-  },
-  {
-    key: 'data',
-    title: '帧内容',
-    dataKey: 'data',
-    width: 230,
-    align: 'center',
-    // 因为是 Unit8Array类型
-    cellRenderer: ({ cellData }) => Array.from(cellData).slice(4, 12).join(','),
+    // cellRenderer: ({ cellData }) => cellData.slice(0, 4).join(','),
+    cellRenderer: ({ cellData }) => {
+      let cmd = Array.from(cellData);
+      let data = parse_cmd(cmd)
+      return data ? data.parseStr : cmd.join(',');
+    },
     // flexGrow: true
   },
   {
     key: 'status',
     title: '状态',
     dataKey: 'status',
-    width: 100,
+    width: 50,
     align: 'center',
   },
-  {
-    key: 'msg',
-    title: '提示',
-    dataKey: 'msg',
-    width: 100,
-    align: 'center',
-  },
+
 ]);
 
 const rowClass = ({rowData, rowIndex}) => {
@@ -529,7 +580,26 @@ const rowClass = ({rowData, rowIndex}) => {
 }
 
 
+let enableBezier = ref(false);
 
+let motorEnable = ref(false);
+function motorEnableChange(value) {
+  console.log('--motorEnableChange: ', value);
+  if(value) {
+    
+    // enable_Director({motorId: 21});
+    let cmdFrameArr = enable_Director({motorId: 22});
+    // debugger;
+    bleSend(cmdFrameArr[0]);;
+    // enable_Director({motorId: 23});
+  }else {
+    // disable_Director({motorId: 21});
+    let cmdFrameArr = disable_Director({motorId: 22});
+    // debugger;
+    bleSend(cmdFrameArr[0]);
+    // disable_Director({motorId: 23});
+  }
+}
 
 </script>
 
@@ -548,11 +618,12 @@ body,
   right: 20px;
   top: 20px;
   width: 500px;
-  height: 220px;
+  /* height: 220px; */
   border-radius: 10px;
   background: rgba(255, 255, 255, 0.15);
   box-sizing: border-box;
   padding: 10px;
+  padding-bottom: 20px;
   padding-right: 40px;
   color: #ddd;
 }

@@ -472,7 +472,8 @@
       this.refCanvas.style["transition-timing-function"] = str;
       console.log("---transition-timing-function: ", str);
 
-      emits('newBezier', `cubic-bezier(${str})`);
+      // emits('newBezier', `cubic-bezier(${str})`);
+      emits('newBezier', {p1: [toFix(cp1.x / this.ratio), toFix(1 - cp1.y  / this.ratio)], p2: [toFix(cp2.x  / this.ratio), toFix(1 - cp2.y  / this.ratio)]});
 
       return `cubic-bezier(${str})`;
 

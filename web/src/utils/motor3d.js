@@ -5,9 +5,7 @@ import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader'//导入GLTF�
 import { TransformControls } from 'three/addons/controls/TransformControls.js'; // 控制
 
 // import huan3 from '/3dModules/huan3.gltf?url'
-
 // console.log(huan3);
-
 
 
 
@@ -24,6 +22,8 @@ class motor3d {
     this.angle_top = 0;
     this.angle_center = 0;
     this.angle_bottom = 0;
+    this.angle_four = 0;
+    this.angle_five = 0;
     var that = this;
 
   }
@@ -50,8 +50,9 @@ class motor3d {
   initScene() {
     this.scene = new THREE.Scene()
     // this.scene.background = new THREE.Color(0xa0a0a0);
-    this.scene.add( new THREE.GridHelper( 5, 10, 0x888888, 0x444444 ) );
+    this.scene.add( new THREE.GridHelper( 20, 20, 0x888888, 0x444444) );
     // this.scene.fog = new THREE.Fog(0x000000, 0, 10000) // 添加雾的效果
+    this.scene.position.y -= 2;
   }
 
   initAxesHelper() {
@@ -65,13 +66,14 @@ class motor3d {
     this.scene.add(hesLight)
 
     const dirLight = new THREE.DirectionalLight()
-    dirLight.position.set(5,5,5)
+    dirLight.position.set(10, 10, 10)
     this.scene.add(dirLight)    
   }
 
   initCamera() {
     this.camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 100)
-    this.camera.position.set(1.5, 2, 3)
+    // this.camera.position.set(1.5, 2, 3)
+    this.camera.position.set(3, 2, 4.5)
 }
 
 initRender() {
@@ -107,92 +109,61 @@ initRender() {
     this.renderer.setSize(window.innerWidth,window.innerHeight)
   }
 
-  /**
-   * @description 
-   */
-  // async rotateArm(type, angle) {
-  //   console.log('旋转手臂');
-  //   let cyberGear = await this.addGLTFModel('cybergearmotor.stp.glb', 'cyber_gear');
-
-  //   // 下臂
-  //   var bottomArmWrapper = new THREE.Object3D();
-  //   bottomArmWrapper.position.x = 0.5;
-  //   bottomArmWrapper.position.y = 0;
-  //   this.scene.add(bottomArmWrapper);
-  //   // bottomArmWrapper.add(new THREE.AxesHelper(2));
-  //   let bottom_arm = await this.addGLTFModel('bottom_arm.glb', 'bottom_arm');
-
-  //   // 中臂
-  //   var centerArmWrapper = new THREE.Object3D();
-  //   centerArmWrapper.position.x = 0;
-  //   centerArmWrapper.position.y =  0.6;
-  //   this.scene.add(centerArmWrapper);
-  //   // centerArmWrapper.add(new THREE.AxesHelper(2));
-  //   let center_arm = await this.addGLTFModel('center_arm.glb', 'center_arm');
-
-
-  //   // 上臂
-  //   var topArmWrapper = new THREE.Object3D();
-  //   topArmWrapper.position.x = 0;
-  //   topArmWrapper.position.y = 0.8;
-  //   topArmWrapper.position.z = 0.2;
-  //   this.scene.add(topArmWrapper);
-  //   // topArmWrapper.add(new THREE.AxesHelper(2));
-  //   let top_arm = await this.addGLTFModel('top_arm.glb', 'top_arm');
-
-
-
-  //   this.angle_top += 0.1;
-
-  //   let render = () => {
-  //     requestAnimationFrame(render);
-  //       bottomArmWrapper.add(bottom_arm.scene);
-  //       bottomArmWrapper.add(centerArmWrapper);
-
-  //       centerArmWrapper.add(center_arm.scene);
-  //       centerArmWrapper.add(topArmWrapper);
-        
-  //       topArmWrapper.add(top_arm.scene);
-
-  //       bottomArmWrapper.rotation.y = this.angle_bottom;
-  //       centerArmWrapper.rotation.z = this.angle_center;
-  //       topArmWrapper.rotation.z = this.angle_top;
-
-  //       this.renderer.render(this.scene, this.camera);
-  //   }
-
-  //   render();
-  // }
 
   async initMesh() {
 
-    let cyberGear = await this.addGLTFModel('cybergearmotor.stp.glb', 'cyber_gear');
+    // let cyberGear = await this.addGLTFModel('cybergearmotor.stp.glb', 'cyber_gear');
+    let zero = await this.addGLTFModel('zero.glb', 'zero');
+    // cyberGear.add(new THREE.AxesHelper(2));
 
-    // 下臂
-    var bottomArmWrapper = new THREE.Object3D();
-    bottomArmWrapper.position.x = 0.5;
-    bottomArmWrapper.position.y = 0;
-    this.scene.add(bottomArmWrapper);
-    // bottomArmWrapper.add(new THREE.AxesHelper(2));
-    let bottom_arm = await this.addGLTFModel('bottom_arm.glb', 'bottom_arm');
+    // 
+    var oneWrapper = new THREE.Object3D();
+    oneWrapper.position.x = 0.5;
+    oneWrapper.position.y = 0.4;
+    // oneWrapper.position.z = 1;
+    this.scene.add(oneWrapper);
+    oneWrapper.add(new THREE.AxesHelper(2));
+    // let one = await this.addGLTFModel('one.glb', 'one');
+    let one = await this.addGLTFModel('one.glb', 'one');
 
-    // 中臂
-    var centerArmWrapper = new THREE.Object3D();
-    centerArmWrapper.position.x = 0;
-    centerArmWrapper.position.y =  0.6;
-    this.scene.add(centerArmWrapper);
-    // centerArmWrapper.add(new THREE.AxesHelper(2));
-    let center_arm = await this.addGLTFModel('center_arm.glb', 'center_arm');
+    // 
+    var twoWrapper = new THREE.Object3D();
+    twoWrapper.position.x = 0;
+    twoWrapper.position.y =  0.25;
+    twoWrapper.position.z =  -0.32;
+    this.scene.add(twoWrapper);
+    twoWrapper.add(new THREE.AxesHelper(2));
+    let two = await this.addGLTFModel('two.glb', 'two');
 
 
-    // 上臂
-    var topArmWrapper = new THREE.Object3D();
-    topArmWrapper.position.x = 0;
-    topArmWrapper.position.y = 0.8;
-    topArmWrapper.position.z = 0.2;
-    this.scene.add(topArmWrapper);
-    // topArmWrapper.add(new THREE.AxesHelper(2));
-    let top_arm = await this.addGLTFModel('top_arm.glb', 'top_arm');
+    // 
+    var threeWrapper = new THREE.Object3D();
+    threeWrapper.position.x = 0;
+    threeWrapper.position.y = 1.5;
+    threeWrapper.position.z = -0.02;
+    this.scene.add(threeWrapper);
+    threeWrapper.add(new THREE.AxesHelper(2));
+    let three = await this.addGLTFModel('three.glb', 'three');
+
+    //
+    var fourWrapper = new THREE.Object3D();
+    fourWrapper.position.x = 0.175;
+    // fourWrapper.position.x = 2;
+    fourWrapper.position.y = 0.32;
+    fourWrapper.position.z =0.32;
+    this.scene.add(fourWrapper);
+    fourWrapper.add(new THREE.AxesHelper(2));
+    let four = await this.addGLTFModel('four.glb', 'four');
+
+    //
+    var fiveWrapper = new THREE.Object3D();
+    fiveWrapper.position.x = 0;
+    fiveWrapper.position.y = 1.25;
+    // fiveWrapper.position.y = 10;
+    fiveWrapper.position.z = 0.197;
+    this.scene.add(fiveWrapper);
+    fiveWrapper.add(new THREE.AxesHelper(2));
+    let five = await this.addGLTFModel('five.glb', 'five');
 
     // let angle_bottom = 0, angle_center = 0, angle_top = 0;
 
@@ -228,17 +199,27 @@ initRender() {
 
     let render = () => {
       requestAnimationFrame(render);
-        bottomArmWrapper.add(bottom_arm.scene);
-        bottomArmWrapper.add(centerArmWrapper);
+        oneWrapper.add(one.scene);
+        oneWrapper.add(twoWrapper);
 
-        centerArmWrapper.add(center_arm.scene);
-        centerArmWrapper.add(topArmWrapper);
+        twoWrapper.add(two.scene);
+        twoWrapper.add(threeWrapper);
         
-        topArmWrapper.add(top_arm.scene);
+        threeWrapper.add(three.scene);
+        threeWrapper.add(fourWrapper);
 
-        bottomArmWrapper.rotation.y = this.angle_bottom;
-        centerArmWrapper.rotation.z = this.angle_center;
-        topArmWrapper.rotation.z = this.angle_top;
+        fourWrapper.add(four.scene);
+        fourWrapper.add(fiveWrapper);
+
+        fiveWrapper.add(five.scene);
+
+
+        oneWrapper.rotation.y = this.angle_bottom;
+        twoWrapper.rotation.z = this.angle_center;
+        threeWrapper.rotation.z = this.angle_top;
+
+        fourWrapper.rotation.y = this.angle_four;
+        fiveWrapper.rotation.z = this.angle_five;
 
         this.renderer.render(this.scene, this.camera);
     }
@@ -264,28 +245,36 @@ initRender() {
     function initGLTF (gltf, type ) {
       gltf.scene.scale.set(5,5,5);
 
-      if(type === 'bottom_arm') {
-        // 初始化位置等信息
-        gltf.scene.scale.set(5,5,5);
-        gltf.scene.rotation.set(Math.PI / 2, 0, 0);
-        gltf.scene.translateZ(-0.6);
+      if(type === 'zero') {
+        gltf.scene.translateX(0.5);
+      }else if(type === 'one') {
+        gltf.scene.translateX(0.5);
+        gltf.scene.translateX(-0.5);
+
+      }else if(type === 'two') {
+        gltf.scene.translateX(-0);
+        gltf.scene.translateZ(-0.2);
+        gltf.scene.translateY(-0);
+        let oneDegree = Math.PI / 180;
+        gltf.scene.rotation.set(oneDegree * 90, oneDegree * 90, oneDegree * 0);
+
+      }else if(type === 'three') {
+        gltf.scene.rotation.set(Math.PI / 2, Math.PI / 180 * -116, 0);
+        gltf.scene.translateX(-0);
+        gltf.scene.translateZ(-0);
         gltf.scene.translateY(-0);
 
-      }else if(type === 'center_arm') {
-        gltf.scene.translateX(-0);
-        gltf.scene.translateZ(0.1);
-        gltf.scene.scale.set(5,5,5);
-        gltf.scene.rotation.set(Math.PI / 180 * 183.5, Math.PI / 180 * 330, Math.PI / 180 * 57);
-
-      }else if(type === 'top_arm') {
-        gltf.scene.rotation.set(Math.PI / 2, 0, 0);
-        gltf.scene.translateY(0.1);
-
-      }else if(type === 'cyber_gear') {
-        gltf.scene.rotation.set(Math.PI / 2, 0, 0);
-        gltf.scene.translateX(0.03);
-        gltf.scene.translateY(-0.4);
-        gltf.scene.translateZ(0.05);
+      }else if(type === 'four') {
+        gltf.scene.rotation.set(0, Math.PI / 180 * 90,  Math.PI / 180 * -90);
+        gltf.scene.translateX(-1.25);
+        gltf.scene.translateZ(0);
+        gltf.scene.translateY(-0.35);
+      }
+      else if(type === 'five') {
+        gltf.scene.rotation.set(Math.PI / 180  * 0, Math.PI / 180 * 90,  Math.PI / 180 * -90);
+        gltf.scene.translateX(0);
+        gltf.scene.translateZ(0);
+        gltf.scene.translateY(0);
       }
 
     } 
