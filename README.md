@@ -13,6 +13,4 @@
 1. npm install
 2. npm run dev
 
-模型（sw-model文件夹）：
-  掘金文章中所用的模型   
-  钢铁侠手臂建模
+！[image](assets/example.png)
