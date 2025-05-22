@@ -43,13 +43,18 @@
 2. npm run dev 
 
 
-
-## APP端：
+## APP端 :scream_cat:  ：
 技术： flutter
 功能： 在开发中，主要页面与功能跟web端类似
 
+## 运行界面 :hamster: ：
 初始化🍺 ：
 ![image](assets/example.png)
 
 运行中示例💪 ：
-![image](assets/example-pose.png)
+![image](assets/example-pose.png) 
+
+## 模型说明 :mega: :
+因为第一版机械臂太丑，所以为了美感，3d模型是模仿ABB的机械臂来做：  
+![image](assets/abb.png)
+
