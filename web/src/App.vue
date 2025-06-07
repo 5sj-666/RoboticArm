@@ -27,7 +27,7 @@
 
     启用贝塞尔曲线优化动作：
     <el-switch
-      v-model="enableBezier"
+      v-model="mainStore.enableBezier"
       class="mb-2"
       active-text="启用"
       inactive-text="关闭"
@@ -35,12 +35,12 @@
 
     <el-button 
       primary 
-      @click="rotateMotor({motorId: 22, limit_spd: 2, loc_ref: armTopAngle})"
+      @click="rotateMotor({motorId: 22, limit_spd: 2, loc_ref: joint3})"
     >更改速度</el-button>
 
 
     <el-switch
-      v-model="motorEnable"
+      v-model="mainStore.enableMotor"
       class="mb-2"
       active-text="使能"
       inactive-text="停止"
@@ -52,13 +52,13 @@
   <div id="scene"></div>
 
   <div class="toggle-box">
-    <div>蓝牙连接: {{ bleConnecting ? "已连接" : "已断开" }}</div>
+    <div>蓝牙连接: {{ bleStore.status === "connecting" ? "已连接" : "已断开" }}</div>
     <!-- <div>旋转角度(0 - 360)</div> -->
 
     <div class="slider-demo-block">
-      <span class="demonstration">five: </span>
+      <span class="demonstration">关节5 </span>
       <el-slider
-        v-model="armFiveAngle"
+        v-model="joint5"
         :min="-180"
         :max="180"
         :step="1"
@@ -71,9 +71,9 @@
       />
     </div>
     <div class="slider-demo-block">
-      <span class="demonstration">four: </span>
+      <span class="demonstration">关节4 </span>
       <el-slider
-        v-model="armFourAngle"
+        v-model="joint4"
         :min="-180"
         :max="180"
         :step="1"
@@ -87,9 +87,43 @@
     </div>
 
     <div class="slider-demo-block">
-      <span class="demonstration">three： </span>
+      <span class="demonstration">关节3 </span>
       <el-slider
-        v-model="armTopAngle"
+        v-model="joint3"
+        :min="-150"
+        :max="140"
+        :step="1"
+        show-stops
+        :marks="{
+          '-150': { style: { color: '#ddd' }, label: '-150 deg' },
+          0: { style: { color: '#ddd' }, label: '0 deg' },
+          140: { style: { color: '#ddd' }, label: '140 deg' },
+        }"
+        @change="rotateMotor({motorId: 22, limit_spd: 5, loc_ref: joint3})"
+      />
+    </div>
+
+    <div class="slider-demo-block">
+      <span class="demonstration">关节2 </span>
+      <el-slider
+        v-model="joint2"
+        :min="-95"
+        :max="95"
+        :step="1"
+        show-stops
+        :marks="{
+          '-95': { style: { color: '#ddd' }, label: '-95 deg' },
+          0: { style: { color: '#ddd' }, label: '0 deg' },
+          95: { style: { color: '#ddd' }, label: '95 deg' },
+        }"
+        @change="rotateMotor({motorId: 23, limit_spd: 2, loc_ref: joint2})"
+      />
+    </div>
+
+    <div class="slider-demo-block">
+      <span class="demonstration">关节1 </span>
+      <el-slider
+        v-model="joint1"
         :min="-180"
         :max="180"
         :step="1"
@@ -99,49 +133,17 @@
           0: { style: { color: '#ddd' }, label: '0 deg' },
           180: { style: { color: '#ddd' }, label: '180 deg' },
         }"
-        @change="rotateMotor({motorId: 22, limit_spd: 5, loc_ref: armTopAngle})"
-      />
-    </div>
-
-    <div class="slider-demo-block">
-      <span class="demonstration">two： </span>
-      <el-slider
-        v-model="armCenterAngle"
-        :min="-120"
-        :max="120"
-        :step="1"
-        show-stops
-        :marks="{
-          '-120': { style: { color: '#ddd' }, label: '-120 deg' },
-          0: { style: { color: '#ddd' }, label: '0 deg' },
-          120: { style: { color: '#ddd' }, label: '120 deg' },
-        }"
-        @change="rotateMotor({motorId: 23, limit_spd: 2, loc_ref: armCenterAngle})"
-      />
-    </div>
-
-    <div class="slider-demo-block">
-      <span class="demonstration">one： </span>
-      <el-slider
-        v-model="armBottomAngle"
-        :min="-180"
-        :max="180"
-        :step="1"
-        show-stops
-        :marks="{
-          '-180': { style: { color: '#ddd' }, label: '-180 deg' },
-          0: { style: { color: '#ddd' }, label: '0 deg' },
-          180: { style: { color: '#ddd' }, label: '180 deg' },
-        }"
-        @change="rotateMotor({motorId: 21, limit_spd: 2, loc_ref: armBottomAngle})"
+        @change="rotateMotor({motorId: 21, limit_spd: 2, loc_ref: joint1})"
       />
     </div>
   </div>
 
   <div class="monitor-box">
+    <!-- {{ mainStore.cmdsHistory }} -->
     <el-table-v2
+      ref="tableRef"
       :columns="columns"
-      :data="recordCmd"
+      :data="mainStore.cmdsHistory"
       :row-class="rowClass"
       :width="600"
       :height="310"
@@ -156,8 +158,6 @@
     </el-table-v2>
   </div>
 
-
-  
 </section>
 
   
@@ -165,29 +165,22 @@
 </template>
 <script setup>
 import motor3d from "./utils/motor3d";
-import { nextTick, onMounted, ref, watchEffect, render, h } from "vue";
+import { nextTick, onMounted, ref, watchEffect, render, watch } from "vue";
 
 import { generateCMD, Loc_Director, parse_cmd, numToUnit8Array, enable_Director, disable_Director } from "./utils/CyberGear.js"
-
 import { drawBezierCurve, getCmdSeries } from "./utils/BezierCurve.js"
-
 import keyframeDialog from "./components/keyframeDialog.vue";
 
+import { main } from '@/stores/index.js';
+import { armModel } from '@/stores/armModel.js';
+import { BLE } from '@/stores/ble.js';
+
+const mainStore = main();
+const armStore = armModel();
+const bleStore = BLE();
+
+let armInstanceRef = ref(null);
 let showKeyframe = ref(false);
-
-/* --- */
-import { useCounterStore } from './stores/index.js'
-
-const counter = useCounterStore()
-
-// counter.testCount++
-// // 自动补全！ ✨
-// counter.$patch({ testCount: counter.testCount + 1 })
-// // 或使用 action 代替
-// counter.increment()
-
-console.log("---pinia: ", counter);
-/* --- */
 
 
 /**
@@ -195,49 +188,25 @@ console.log("---pinia: ", counter);
  */
 function setMotorInitialPoint() {
   // AA 01 00 08 06 00 01 05 01 00 00 00 00 00 00 00 7A
-
   for(let i = 21; i <= 23; i++) {
     let cmdFrame = generateCMD('initialPoint', { motorId: 21});
-    setTimeout(() => {
-      try {
-        BleCharacteristic.writeValue(cmdFrame);
-        console.log("---指令发送成功---");
-        recordCmd.value.push({type: 'send', data: cmdFrame, status: 'success'});
-      } catch (error) {
-        // ElNotification({
-        //   title: "蓝牙",
-        //   message: bleConnecting.value ? error : '请连接蓝牙',
-        //   position: "bottom-right",
-        //   type: "error",
-        //   duration: 0,
-        // });
-        console.warn("---指令发送失败---");
-        recordCmd.value.push({type: 'send', data: cmdFrame, status: 'fail'});
-      } 
-      console.log(cmdFrame);
-    }, (i - 21) * 500)
-    
-  
+    bleStore.sendMsg(cmdFrame, mainStore); 
   }
-  
 }
-
-
-let armInstance = ref(null);
-
-// 通信记录部分
-// item : {type: enum[send | receive], data: str , status: enum[success | error | receive], msg: str}
-let recordCmd = ref([]);
 
 
 onMounted(() => {
   // let info = parse_cmd();
   // console.log('---info: ', info);
 
-  armInstance.value = new motor3d("#scene");
-  console.log("--armInstance：", armInstance);
+  armInstanceRef.value = new motor3d("#scene");
+  // console.log("--armInstance：", armInstance);
+  console.log(armStore.armInstance);
+  armStore.setInstance(armInstanceRef.value);
+  console.log("armModel.armInstance", armStore.armInstance, armStore.test);
 
-  bleAvailable();
+  // bleAvailable();
+  bleStore.availableFunc();
 
   // BleCharacteristic.writeValue(cmdFrame);
   //   console.log("---指令发送成功---");
@@ -301,187 +270,30 @@ function rotateMotor({motorId, limit_spd, loc_ref}) {
   let cmdArr = Loc_Director({motorId, limit_spd, loc_ref: rad});
   // console.log('---cmdArr: ', cmdArr);
   for(let i = 0; i < cmdArr.length; i++) {
-    setTimeout(() => { bleSend(cmdArr[i]); }, 15)
+    bleStore.sendMsg(cmdArr[i], mainStore);
   }
 }
 
-let armBottomAngle = ref(0);
-let armCenterAngle = ref(0);
-let armTopAngle = ref(0);
+let joint1 = ref(0);
+let joint2 = ref(0);
+let joint3 = ref(0);
 
-let armFourAngle = ref(0);
-let armFiveAngle = ref(0);
+let joint4 = ref(0);
+let joint5 = ref(0);
 
 
 watchEffect(() => {
-  // console.log('角度： ', armBottomAngle.value, armCenterAngle.value, armTopAngle.value);
-  // console.log('角度： ', -(armBottomAngle.value * Math.PI) / 180, -(armCenterAngle.value * Math.PI) / 180, -(armTopAngle.value * Math.PI) / 180);
-  // debugger; 
-  if (armInstance.value) {
-    armInstance.value.angle_bottom = -(armBottomAngle.value * Math.PI) / 180;
-    armInstance.value.angle_center = -(armCenterAngle.value * Math.PI) / 180;
-    armInstance.value.angle_top = -(armTopAngle.value * Math.PI) / 180;
-    armInstance.value.angle_four = -(armFourAngle.value * Math.PI) / 180;
-    armInstance.value.angle_five = -(armFiveAngle.value * Math.PI) / 180;
-  }
+  let position = {
+    joint1: -(joint1.value * Math.PI) / 180,
+    joint2: -(joint2.value * Math.PI) / 180,
+    joint3: -(joint3.value * Math.PI) / 180,
+    joint4: -(joint4.value * Math.PI) / 180,
+    joint5: -(joint5.value * Math.PI) / 180,
+  };
+  armStore.setPosition(position);
+  // console.log(armStore);
 });
 
-let bleConnecting = ref(false);
-/**
- * 判断蓝牙是否可用，可用的话，获取可用的蓝牙列表
- */
-async function bleAvailable() {
-  let available = await navigator.bluetooth.getAvailability();
-  ElNotification.closeAll();
-
-  if (!available) {
-    console.log("Doh! Bluetooth is not supported");
-    // alert("当前设备不支持蓝牙");
-    ElNotification({
-      title: "蓝牙",
-      message: "当前设备不支持蓝牙",
-      position: "bottom-right",
-      type: "warning",
-    });
-    return;
-  }
-
-
-  ElNotification({
-    title: "蓝牙可用",
-    dangerouslyUseHTMLString: true,
-    message: h("span", null, [
-      h("span", "点击"),
-      h(
-        ElButton,
-        {
-          type: "primary",
-          onClick: handleBlueTooth,
-          style: { margin: "0 5px" },
-          size: "small",
-        },
-        () => "连接蓝牙"
-      ),
-      h("span", "来控制机械臂"),
-    ]),
-    position: "bottom-right",
-    type: "success",
-    duration: 0,
-  });
-  console.log("This device supports Bluetooth!");
-}
-
-async function handleBlueTooth() {
-  // console.log('连接蓝牙');
-  let device = await navigator.bluetooth.requestDevice({
-    filters: [{ namePrefix: "ESP" }],
-    optionalServices: [0x00ff],
-  });
-  // 蓝牙断开时
-  device.addEventListener("gattserverdisconnected", () => {
-    ElNotification.closeAll();
-    ElNotification({
-      title: "蓝牙",
-      message: "蓝牙已断开",
-      position: "bottom-right",
-      type: "warning",
-      duration: 0,
-    });
-    bleConnecting.value = false;
-  });
-
-  let server = await device.gatt.connect();
-  console.log("server: ", server);
-  let service = await server.getPrimaryService(0x00ff);
-  console.log("service: ", service);
-  let characteristic = await service.getCharacteristic(0xff01);
-  console.log("characteristic: ", characteristic);
-  window.BleCharacteristic = characteristic;
-
-  ElNotification.closeAll();
-  ElNotification({
-    title: "蓝牙",
-    message: "连接成功",
-    position: "bottom-right",
-    type: "success",
-    duration: 0,
-  });
-  bleConnecting.value = true;
-
-  // 接收蓝牙服务发出的通知
-  characteristic.addEventListener("characteristicvaluechanged", (e) => {
-    try{
-      console.log("蓝牙Notification通知: ", e, "值:");
-      let CAN_frame_data = Array.from(new Uint8Array(e.target.value.buffer));
-      // .map(
-      //   (num) => {
-      //     return "0x" + num.toString(16);
-      //   }
-      // );
-      recordCmd.value.push({type: 'receive', data: CAN_frame_data, status: 'received'});
-    } catch(error) {
-      console.error("蓝牙Notification通知错误: ", error);
-    }
-   
-  });
-
-  characteristic.startNotifications();
-
-  // let testData = new Uint8Array([ 0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77, 0x88, 0x99, 0xaa, 0xbb, 0xcc, 0xdd, 0xee, 0xff  ])
-
-  // setInterval(() => {characteristic.writeValue(testData);}, 3000 );
-}
-
-// /**
-//  * @description 生成指令   采用策略模式  因为使用非常频繁，所以改为静态类
-//  * @param { string } type 策略类型
-//  * @param { obj } params 所需的参数，暂无法全部确定
-//  */
-// function generateCMD(type, params = {}) {
-//   // let TWAI_id = new Array(4).fill(0);
-//   // let TWAI_data = new Array(8).fill(0);
-
-//   // if (type === "enable") {
-//   //   TWAI_id = [0x03, 0x00, 0xfd, 0x15];
-//   //   // TWAI_data = []
-//   // } else if (type === "disable") {
-//   //   TWAI_id = [0x04, 0x00, 0xfd, 0x15];
-//   // } else if (type === "jog5") {
-//   //   TWAI_id = [0x12, 0x00, 0xfd, 0x15];
-//   //   TWAI_data = [0x05, 0x70, 0x00, 0x00, 0x07, 0x01, 0x95, 0x54];
-//   // } else if (type === "jog0") {
-//   //   TWAI_id = [0x12, 0x00, 0xfd, 0x15];
-//   //   TWAI_data = [0x05, 0x70, 0x00, 0x00, 0x07, 0x00, 0x7f, 0xff];
-//   // }
-
-//   // console.log("TWAI_id: ", TWAI_id, "TWAI_data: ", TWAI_data);
-//   // let cmdFrame = Uint8Array.from([...TWAI_id, ...TWAI_data]);
-
-//   let TWAI_id = new Array(4).fill(0);
-//   let TWAI_data = new Array(8).fill(0);
-
-//   var Strategies =  {
-//     enable: () => {
-//       TWAI_id = [0x03, 0x00, 0xfd, 0x15];
-//     },
-//     disable: () => {
-//       TWAI_id = [0x04, 0x00, 0xfd, 0x15];
-//     },
-//     jog5: () => {
-//       TWAI_id = [0x12, 0x00, 0xfd, 0x15];
-//       TWAI_data = [0x05, 0x70, 0x00, 0x00, 0x07, 0x01, 0x95, 0x54];
-//     },
-//     jog0: () => {
-//       TWAI_id = [0x12, 0x00, 0xfd, 0x15];
-//       TWAI_data = [0x05, 0x70, 0x00, 0x00, 0x07, 0x00, 0x7f, 0xff];
-//     }
-//   }
-
-//   Strategies[type](params);
-//   console.log('策略模式: ', [...TWAI_id, ...TWAI_data]);
-//   return Uint8Array.from([...TWAI_id, ...TWAI_data]);
-
-// }
 
 /**
  *
@@ -492,70 +304,25 @@ function cmdVal(type, position) {
   let cmdFrame = generateCMD(type, {position});
   
   console.log(cmdFrame);
-  bleSend(cmdFrame);
+  bleStore.sendMsg(cmdFrame);
 
 }
 
-function bleSend(cmdFrame) {
-  try {
-    // BleCharacteristic.writeValue(cmdFrame);
-    BleCharacteristic.writeValueWithoutResponse(cmdFrame);
-    console.log("---指令发送成功---");
-    recordCmd.value.push({type: 'send', data: cmdFrame, status: 'success'});
-  } catch (error) {
-    // ElNotification({
-    //   title: "蓝牙",
-    //   message: bleConnecting.value ? error : '请连接蓝牙',
-    //   position: "bottom-right",
-    //   type: "error",
-    //   duration: 0,
-    // });
-    console.warn("---指令发送失败---");
-    recordCmd.value.push({type: 'send', data: cmdFrame, status: 'fail'});
-  }
-}
-
-// 使用队列，存放指令的顺序列表， 以完成一个动作， 使用建造者模式，
-
-/**
- * @description  构建动作的指令数组  采用建造者模式， 比如要发送个jog5的动作   [ 开始提示, 使能指令， jog指令，jog停止，停止指令， 结束提示 ]
- */
-function builderAction() {
-    //
-    function tip() {
-      return () => {
-        console.log("---执行函数---");
-      }
-    }
-
-    // 指挥者
-    function director() {
-
-      return []
-    }
-}
-
+const tableRef = ref(null);
 const columns = ref([
   {
     key: 'type',
     title: '类型',
     dataKey: 'type',
     width: 50,
-    cellRenderer: ({ cellData }) => cellData === 'send' ? '发送' : '接收',
+    // cellRenderer: ({ cellData }) => cellData === 'send' ? '发送' : '接收',
   },
   {
-    key: 'data',
+    key: 'parseStr',
     title: '',
-    dataKey: 'data',
+    dataKey: 'parseStr',
     width: 420,
     align: 'center',
-    // 因为是 Unit8Array类型
-    // cellRenderer: ({ cellData }) => cellData.slice(0, 4).join(','),
-    cellRenderer: ({ cellData }) => {
-      let cmd = Array.from(cellData);
-      let data = parse_cmd(cmd)
-      return data ? data.parseStr : cmd.join(',');
-    },
     // flexGrow: true
   },
   {
@@ -563,7 +330,14 @@ const columns = ref([
     title: '状态',
     dataKey: 'status',
     width: 50,
-    align: 'center',
+    align: 'center'
+  },
+  {
+    key: 'time',
+    title: '时间',
+    dataKey: 'time',
+    width: 100,
+    align: 'center'
   },
 
 ]);
@@ -580,25 +354,15 @@ const rowClass = ({rowData, rowIndex}) => {
 }
 
 
-let enableBezier = ref(false);
-
-let motorEnable = ref(false);
+/**
+ * @description 电机使能开关
+ * @param {boolean} value true: 使能电机， false: 停止电机
+ */
 function motorEnableChange(value) {
   console.log('--motorEnableChange: ', value);
-  if(value) {
-    
-    // enable_Director({motorId: 21});
-    let cmdFrameArr = enable_Director({motorId: 22});
-    // debugger;
-    bleSend(cmdFrameArr[0]);;
-    // enable_Director({motorId: 23});
-  }else {
-    // disable_Director({motorId: 21});
-    let cmdFrameArr = disable_Director({motorId: 22});
-    // debugger;
-    bleSend(cmdFrameArr[0]);
-    // disable_Director({motorId: 23});
-  }
+  let cmdFrameArr = value ? enable_Director({motorId: 22}) : disable_Director({motorId: 22});
+  mainStore.setEnableMotor(value);
+  bleStore.sendMsg(cmdFrameArr[0], mainStore);
 }
 
 </script>
@@ -662,6 +426,7 @@ body,
   box-sizing: border-box;
   padding-right: 40px;
   overflow: hidden;
+  user-select: none;
 }
 
 

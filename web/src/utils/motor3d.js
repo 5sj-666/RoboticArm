@@ -1,12 +1,7 @@
 import * as THREE from 'three'//导入three.js核心库
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls' //导入轨道控制器
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader'//导入GLTF模型加载器
-
 import { TransformControls } from 'three/addons/controls/TransformControls.js'; // 控制
-
-// import huan3 from '/3dModules/huan3.gltf?url'
-// console.log(huan3);
-
 
 
 class motor3d {
@@ -19,11 +14,11 @@ class motor3d {
     this.control;
     this.init(); //初始化
     this.animate();//循环函数
-    this.angle_top = 0;
-    this.angle_center = 0;
-    this.angle_bottom = 0;
-    this.angle_four = 0;
-    this.angle_five = 0;
+    this.joint3 = 0;
+    this.joint2 = 0;
+    this.joint1 = 0;
+    this.joint4 = 0;
+    this.joint5 = 0;
     var that = this;
 
   }
@@ -116,14 +111,12 @@ initRender() {
     let zero = await this.addGLTFModel('zero.glb', 'zero');
     // cyberGear.add(new THREE.AxesHelper(2));
 
-    // 
     var oneWrapper = new THREE.Object3D();
     oneWrapper.position.x = 0.5;
     oneWrapper.position.y = 0.4;
     // oneWrapper.position.z = 1;
     this.scene.add(oneWrapper);
-    oneWrapper.add(new THREE.AxesHelper(2));
-    // let one = await this.addGLTFModel('one.glb', 'one');
+    // oneWrapper.add(new THREE.AxesHelper(2));
     let one = await this.addGLTFModel('one.glb', 'one');
 
     // 
@@ -132,7 +125,7 @@ initRender() {
     twoWrapper.position.y =  0.25;
     twoWrapper.position.z =  -0.32;
     this.scene.add(twoWrapper);
-    twoWrapper.add(new THREE.AxesHelper(2));
+    // twoWrapper.add(new THREE.AxesHelper(2));
     let two = await this.addGLTFModel('two.glb', 'two');
 
 
@@ -142,60 +135,27 @@ initRender() {
     threeWrapper.position.y = 1.5;
     threeWrapper.position.z = -0.02;
     this.scene.add(threeWrapper);
-    threeWrapper.add(new THREE.AxesHelper(2));
+    // threeWrapper.add(new THREE.AxesHelper(2));
     let three = await this.addGLTFModel('three.glb', 'three');
 
     //
     var fourWrapper = new THREE.Object3D();
     fourWrapper.position.x = 0.175;
-    // fourWrapper.position.x = 2;
     fourWrapper.position.y = 0.32;
     fourWrapper.position.z =0.32;
     this.scene.add(fourWrapper);
-    fourWrapper.add(new THREE.AxesHelper(2));
+    // fourWrapper.add(new THREE.AxesHelper(2));
     let four = await this.addGLTFModel('four.glb', 'four');
 
     //
     var fiveWrapper = new THREE.Object3D();
     fiveWrapper.position.x = 0;
     fiveWrapper.position.y = 1.25;
-    // fiveWrapper.position.y = 10;
     fiveWrapper.position.z = 0.197;
     this.scene.add(fiveWrapper);
-    fiveWrapper.add(new THREE.AxesHelper(2));
+    // fiveWrapper.add(new THREE.AxesHelper(2));
     let five = await this.addGLTFModel('five.glb', 'five');
 
-    // let angle_bottom = 0, angle_center = 0, angle_top = 0;
-
-    // 响应键盘事件
-    // onkeydown = (event) => {
-    //   console.log('---响应键盘事件旋转: ', event, this.angle_bottom, this.angle_center, this.angle_top);
-    //   if(this.angle_center >= 180 || this.angle_center <= -180) {
-    //     this.angle_center = 0;
-    //     return false;
-    //   }
-    //   if(this.angle_top >= 180 || this.angle_top <= -180) {
-    //     this.angle_top = 0;
-    //     return false;
-    //   }
-    //   if(this.angle_bottom >= 180 || this.angle_bottom <= -180) {
-    //     this.angle_bottom = 0;
-    //     return false;
-    //   }
-    //   if(event.keyCode == 40) { // 	Dw Arrow  
-    //     this.angle_center += 0.1;
-    //   } else if(event.keyCode == 38) { // Up Arrow 
-    //     this.angle_center -= 0.1;
-    //   } else if(event.keyCode == 37) { // Left Arrow	
-    //     this.angle_top += 0.1;
-    //   } else if(event.keyCode == 39) {  // Right Arrow
-    //     this.angle_top -= 0.1;
-    //   } else if(event.keyCode == 65) { // A 左
-    //     this.angle_bottom += 0.1;
-    //   } else if(event.keyCode == 68) { // D 右
-    //     this.angle_bottom -= 0.1;
-    //   }
-    // }
 
     let render = () => {
       requestAnimationFrame(render);
@@ -214,12 +174,12 @@ initRender() {
         fiveWrapper.add(five.scene);
 
 
-        oneWrapper.rotation.y = this.angle_bottom;
-        twoWrapper.rotation.z = this.angle_center;
-        threeWrapper.rotation.z = this.angle_top;
+        oneWrapper.rotation.y = this.joint1;
+        twoWrapper.rotation.z = this.joint2;
+        threeWrapper.rotation.z = this.joint3;
 
-        fourWrapper.rotation.y = this.angle_four;
-        fiveWrapper.rotation.z = this.angle_five;
+        fourWrapper.rotation.y = this.joint4;
+        fiveWrapper.rotation.z = this.joint5;
 
         this.renderer.render(this.scene, this.camera);
     }
@@ -252,29 +212,19 @@ initRender() {
         gltf.scene.translateX(-0.5);
 
       }else if(type === 'two') {
-        gltf.scene.translateX(-0);
         gltf.scene.translateZ(-0.2);
-        gltf.scene.translateY(-0);
         let oneDegree = Math.PI / 180;
         gltf.scene.rotation.set(oneDegree * 90, oneDegree * 90, oneDegree * 0);
 
       }else if(type === 'three') {
         gltf.scene.rotation.set(Math.PI / 2, Math.PI / 180 * -116, 0);
-        gltf.scene.translateX(-0);
-        gltf.scene.translateZ(-0);
-        gltf.scene.translateY(-0);
-
       }else if(type === 'four') {
         gltf.scene.rotation.set(0, Math.PI / 180 * 90,  Math.PI / 180 * -90);
         gltf.scene.translateX(-1.25);
-        gltf.scene.translateZ(0);
         gltf.scene.translateY(-0.35);
       }
       else if(type === 'five') {
         gltf.scene.rotation.set(Math.PI / 180  * 0, Math.PI / 180 * 90,  Math.PI / 180 * -90);
-        gltf.scene.translateX(0);
-        gltf.scene.translateZ(0);
-        gltf.scene.translateY(0);
       }
 
     } 

@@ -13,7 +13,22 @@
       
       <div style="display:flex; flex-direction: row;border: 1px solid #444">
         <div style="width: 30%">
-          <div>电机id: 32</div>
+          <div> 关节： 
+            <el-select
+              v-model="currJoint"
+              placeholder="选择关节"
+              size="middle"
+              style="width: 240px"
+            >
+              <el-option
+                v-for="item in jointList"
+                :key="item.value"
+                :label="item.label"
+                :value="item.value"
+              />
+            </el-select>
+          </div>
+          <div>电机id: </div>
           <div>当前状态: </div>
           <div>时间区间: 
             <div>
@@ -125,12 +140,57 @@
 </template>
 <script setup>
   import CubicBezier from "./CubicBezier/index.vue";
-  import { nextTick, ref } from "vue";
-
+  import { nextTick, ref, onMounted } from "vue";
   import { getCmdSeries } from "../utils/BezierCurve.js"
-
   import Track from "./CubicBezier/track.vue";
+  import { runKeyframeAnimation, computedKeyframeDetails } from "@/utils/keyframe/index.js";
+  import { armModel } from '@/stores/armModel.js';
 
+  runKeyframeAnimation([
+    { time: 0,
+      motorId: 21,
+      location: 180,
+      speed: 2, 
+    },
+    { time: 1000, 
+      motorId: 21,
+      location: 180, 
+      speed: 2,
+    },
+    { time: 2000,
+      motorId: 21,
+      location: 180, 
+      speed: 2, 
+    }
+  ]);
+  onMounted(() => {
+    // nextTick(() => {
+      const armStore = armModel()
+      let arr = [
+        {
+          time: 0,
+          motorId: 21,
+          location: 180,
+          speed: 2,
+        },
+        {
+          time: 1000,
+          motorId: 21,
+          location: 180,
+          speed: 2,
+        },
+        {
+          time: 2000,
+          motorId: 21,
+          location: 180,
+          speed: 2,
+        }
+      ];
+      computedKeyframeDetails(arr, armStore, false);
+      // debugger;
+    // });
+  });
+  
   // const props = defineProps({
   //   visible: {
   //     type: Boolean,
@@ -272,6 +332,29 @@
 
 
   }
+  let currJoint = ref('');
+  const jointList = [
+    {
+      value: '21',
+      label: '关节1',
+    },
+    {
+      value: '22',
+      label: '关节2',
+    },
+    {
+      value: '23',
+      label: '关节3',
+    },
+    {
+      value: '24',
+      label: '关节4',
+    },
+    {
+      value: '25',
+      label: '关节5',
+    },
+  ]
 
 </script>
 <style scoped>
