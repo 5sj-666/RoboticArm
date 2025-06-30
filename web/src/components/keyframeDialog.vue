@@ -44,7 +44,7 @@
           </div>
         </div>
         
-        <div style="flex: 1">
+        <div style="flex: 1; max-width: 70%">
           <div>贝塞尔曲线</div>
           <div class="bezier-example">
             <!-- <div ref="refBezierExample">1</div> -->
@@ -108,8 +108,10 @@
                 :bezierStyle="{
                   bezierLine: {
                     strokeStyle: '#333',
-                  }
-                }" 
+                  },
+                }"
+                :polylineBezier="true"
+                :polylineCount="5"  
                 @newBezier="newBezierFunc"
               />
             <!-- </div> -->
@@ -117,15 +119,12 @@
         </div>
       </div>
 
-      
-      
-
       <!-- <div>运动曲线预览</div>
       <div class="dialog-graph_detail">
-
-
       </div> -->
       <el-button @click="addKeyData">添加</el-button>
+
+      <el-button @click="getAnimationCmds(arr, armModelStore, mainStore.enableBezier)">测试关键帧</el-button>
     </div>
     <template #footer>
       <div class="dialog-footer">
@@ -140,53 +139,57 @@
 </template>
 <script setup>
   import CubicBezier from "./CubicBezier/index.vue";
-  import { nextTick, ref, onMounted } from "vue";
+  import { nextTick, ref, onMounted, reactive } from "vue";
   import { getCmdSeries } from "../utils/BezierCurve.js"
   import Track from "./CubicBezier/track.vue";
-  import { runKeyframeAnimation, computedKeyframeDetails } from "@/utils/keyframe/index.js";
-  import { armModel } from '@/stores/armModel.js';
+  import { runKeyframeAnimation, getAnimationCmds } from "@/utils/keyframe/index.js";
+  import { useArmModelStore } from '@/stores/armModel.js';
+  import { useMainStore } from '@/stores/index.js';
 
-  runKeyframeAnimation([
-    { time: 0,
-      motorId: 21,
-      location: 180,
-      speed: 2, 
-    },
-    { time: 1000, 
-      motorId: 21,
-      location: 180, 
-      speed: 2,
-    },
-    { time: 2000,
-      motorId: 21,
-      location: 180, 
-      speed: 2, 
-    }
-  ]);
-  onMounted(() => {
-    // nextTick(() => {
-      const armStore = armModel()
-      let arr = [
+  const armModelStore = useArmModelStore();
+  const mainStore = useMainStore();
+
+
+  // runKeyframeAnimation([
+  //   { time: 0,
+  //     motorId: 21,
+  //     location: 180,
+  //     speed: 2, 
+  //   },
+  //   { time: 1000, 
+  //     motorId: 21,
+  //     location: 180, 
+  //     speed: 2,
+  //   },
+  //   { time: 2000,
+  //     motorId: 21,
+  //     location: 180, 
+  //     speed: 2, 
+  //   }
+  // ]);
+  let arr = reactive([
         {
           time: 0,
           motorId: 21,
-          location: 180,
-          speed: 2,
+          location: 0,
+          timingFunction: 'linear'
         },
         {
           time: 1000,
           motorId: 21,
           location: 180,
-          speed: 2,
+          timingFunction: '0.9, 0.13, 0.88, 0.28'
         },
         {
           time: 2000,
           motorId: 21,
-          location: 180,
-          speed: 2,
+          location: 210,
+          timingFunction: '0.9, 0.13, 0.88, 0.28'
         }
-      ];
-      computedKeyframeDetails(arr, armStore, false);
+      ]);
+  onMounted(() => {
+    // nextTick(() => {
+      // getAnimationCmds(arr, armModelStore);
       // debugger;
     // });
   });
@@ -236,7 +239,7 @@
 
   const refBezierExample = ref(null);
 
-  // let currentBezier = ref("ease-in");
+  let currentBezier = ref("ease-in");
 
   //问题:  transitionTimingFunction不生效
   function newBezierFunc(bezierStr) {
@@ -245,7 +248,7 @@
     // refBezierExample.value.style = `transition: all 0s linear; transform: translate(0, 0);`;
     console.log('newBezierFunc', bezierStr);
     // setInteractBezierStr(`${bezierStr.p1[0]}, ${bezierStr.p1[1]}, ${bezierStr.p2[0]}, ${bezierStr.p2[1]}`);
-    // currentBezier.value = bezierStr;
+    currentBezier.value = bezierStr;
     // setTimeout(() => {
     //   refBezierExample.value.style = `transition: all 1s; transitionTimingFunction: ${bezierStr}; transform: translate(480px, 0); `;
       

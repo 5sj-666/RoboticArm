@@ -138,25 +138,7 @@
     </div>
   </div>
 
-  <div class="monitor-box">
-    <!-- {{ mainStore.cmdsHistory }} -->
-    <el-table-v2
-      ref="tableRef"
-      :columns="columns"
-      :data="mainStore.cmdsHistory"
-      :row-class="rowClass"
-      :width="600"
-      :height="310"
-      class="el-table-v2_custom"
-      header-class="el-table-v2-header_custom"
-    >
-    <template #empty>
-      <div class="flex items-center justify-center h-100%">
-        <el-empty :description="'暂无数据'" :image-size="100" />
-      </div>
-    </template>
-    </el-table-v2>
-  </div>
+  <cmdsHistory />
 
 </section>
 
@@ -170,14 +152,15 @@ import { nextTick, onMounted, ref, watchEffect, render, watch } from "vue";
 import { generateCMD, Loc_Director, parse_cmd, numToUnit8Array, enable_Director, disable_Director } from "./utils/CyberGear.js"
 import { drawBezierCurve, getCmdSeries } from "./utils/BezierCurve.js"
 import keyframeDialog from "./components/keyframeDialog.vue";
+import cmdsHistory from "./components/cmdsHistory.vue";
 
-import { main } from '@/stores/index.js';
-import { armModel } from '@/stores/armModel.js';
-import { BLE } from '@/stores/ble.js';
+import { useMainStore } from '@/stores/index.js';
+import { useArmModelStore } from '@/stores/armModel.js';
+import { useBleStore } from '@/stores/ble.js';
 
-const mainStore = main();
-const armStore = armModel();
-const bleStore = BLE();
+const mainStore = useMainStore();
+const armModelStore = useArmModelStore();
+const bleStore = useBleStore();
 
 let armInstanceRef = ref(null);
 let showKeyframe = ref(false);
@@ -201,9 +184,9 @@ onMounted(() => {
 
   armInstanceRef.value = new motor3d("#scene");
   // console.log("--armInstance：", armInstance);
-  console.log(armStore.armInstance);
-  armStore.setInstance(armInstanceRef.value);
-  console.log("armModel.armInstance", armStore.armInstance, armStore.test);
+  console.log(armModelStore.armInstance);
+  armModelStore.setInstance(armInstanceRef.value);
+  console.log("armModel.armInstance", armModelStore.armInstance, armModelStore.test);
 
   // bleAvailable();
   bleStore.availableFunc();
@@ -290,8 +273,8 @@ watchEffect(() => {
     joint4: -(joint4.value * Math.PI) / 180,
     joint5: -(joint5.value * Math.PI) / 180,
   };
-  armStore.setPosition(position);
-  // console.log(armStore);
+  armModelStore.setPosition(position);
+  // console.log(armModelStore);
 });
 
 
@@ -307,52 +290,6 @@ function cmdVal(type, position) {
   bleStore.sendMsg(cmdFrame);
 
 }
-
-const tableRef = ref(null);
-const columns = ref([
-  {
-    key: 'type',
-    title: '类型',
-    dataKey: 'type',
-    width: 50,
-    // cellRenderer: ({ cellData }) => cellData === 'send' ? '发送' : '接收',
-  },
-  {
-    key: 'parseStr',
-    title: '',
-    dataKey: 'parseStr',
-    width: 420,
-    align: 'center',
-    // flexGrow: true
-  },
-  {
-    key: 'status',
-    title: '状态',
-    dataKey: 'status',
-    width: 50,
-    align: 'center'
-  },
-  {
-    key: 'time',
-    title: '时间',
-    dataKey: 'time',
-    width: 100,
-    align: 'center'
-  },
-
-]);
-
-const rowClass = ({rowData, rowIndex}) => {
-  // console.log('rowClass: ', rowData.status, rowData);
-  if(rowData.status === 'fail') {
-    return 'el-table-v2_row-error';
-  }
-  // else if(rowData.status === 'success') {
-  //   return 'el-table-v2_row-success'
-  // }
-  return '';
-}
-
 
 /**
  * @description 电机使能开关
@@ -435,10 +372,4 @@ body,
 html, body, #app {
   overflow: hidden;
 }
-.el-table-v2_row-error {
-  background: var(--el-color-danger-light-5);
-}
-/* .el-table-v2_row-success {
-  background: var(--el-color-success-light-5);
-} */
 </style>

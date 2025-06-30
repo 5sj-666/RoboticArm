@@ -2,7 +2,7 @@
 import { defineStore } from 'pinia';
 import { h } from "vue";
 
-export const BLE = defineStore('BLE', {
+export const useBleStore = defineStore('BLE', {
   state: () => {
     return {
       device: null,

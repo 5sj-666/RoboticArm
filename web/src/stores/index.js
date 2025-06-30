@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia';
 import { parse_cmd } from "../utils/CyberGear.js";
 
-export const main = defineStore('mainStore', {
+export const useMainStore = defineStore('main', {
   state: () => {
     return { 
       enableBezier: false, // 是否支持贝塞尔曲线
@@ -26,9 +26,9 @@ export const main = defineStore('mainStore', {
      */
     addCmdsHistory(cmdObj) {
       let cmd = Array.from(cmdObj.data);
-      this.cmdsHistory.unshift({...cmdObj, parseStr: parse_cmd(cmd).parseStr || cmd, time: formatTime(new Date())});
+      this.cmdsHistory.unshift({...cmdObj, parseStr: parse_cmd(cmd)?.parseStr || cmd, time: formatTime(new Date())});
 
-      console.log('addCmdToHistory:', {...cmdObj, parseStr: parse_cmd(cmd).parseStr || cmd});
+      console.log('addCmdToHistory:', {...cmdObj, parseStr: parse_cmd(cmd)?.parseStr || cmd});
       function formatTime(date) {
         const pad = n => n.toString().padStart(2, '0');
         return `${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`;

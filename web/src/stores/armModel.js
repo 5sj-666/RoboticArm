@@ -1,7 +1,7 @@
 // stores/counter.js
 import { defineStore } from 'pinia'
 
-export const armModel = defineStore('armModel', {
+export const useArmModelStore = defineStore('armModel', {
   state: () => {
     return {
       map: {

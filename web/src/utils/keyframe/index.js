@@ -1,46 +1,170 @@
+/*
+  时间 位置 速度，三个只需要两个就行了。
+  那么此时关键帧就需要认真考虑： 
+  1. 参考css的使用来说： 只需要位置和时间。  电机静止时，可能需要写两个同样的关键帧，但时间不同
+  2. 但电机需要速度和位置，所以速度需要我们计算。
+
+*/
+
 
 import { Loc_Director } from '@/utils/CyberGear.js';
 
-// import { armModel } from '@/stores/armModel.js'
 
-// const armStore = armModel();
+// import { useArmModelStore } from '@/stores/armModel.js'
+
+// const armModelStore = armModel();
+
 
 /**
- * @description 计算关键帧具体信息
+ * @description 获取动画所有指令，按时间排序。
+ *  动画方面使用timing function控制，linear的话不用插帧，其他的需要插帧。
  * @param {Array} rawArr 原始关键帧数组
- * @param {boolean} bezierAble 是否支持贝塞尔曲线
+    Array<{
+          time: 0,
+          motorId: 21,
+          location: 180,
+          // speed: 2, // 速度应该是被计算出来的
+          timingFunction: ''  // 规定动画的速度曲线
+        }>
+    对数据格式做下说明: 数组里的item，表明在time这个时刻，id为motorId的电机，需要位移到location这个位置，移动过程中的速度（可变速度）通过timing function来控制
  * @returns { Array<{time: number, action: function}>} 返回一个包含关键帧信息的数组
  */
-function computedKeyframeDetails(rawArr,
-  armStore,
-  bezierAble = false
-) {
-  if (!Array.isArray(rawArr) || rawArr.length === 0) return [];
-  let keyframes = [];
+function getAnimationCmds(keyframes, armModelStore, enableBezier = false) {
+  // 所有的frames(帧信息)数组
+  let allFrames = [];
+
+  for(let i = 0; i < keyframes.length - 1; i++) {
+    let curFrame = keyframes[i];
+    let nextFrame = keyframes[i + 1];
+
+    let splitCount = 2; // 默认插帧数量为2
+    if(enableBezier) {
+      splitCount = 5;
+    }
+    let insetKeyframes = insertFrame(curFrame, nextFrame, splitCount);
+
+    // allFrames.push(insetKeyframes);
+
+    // console.log("--insetKeyframes: ", insetKeyframes);
+    allFrames.push(...insetKeyframes);
+    
+    // insetKeyframes;
+    // debugger;
+  }
+  console.log("--allFrames: ", allFrames);
+
+
+
   // debugger;
-  rawArr.forEach(item => {
+  // if (!Array.isArray(keyframes) || keyframes.length === 0) return [];
+
+  let cmdsWithTime = [];
+  // // debugger;
+  allFrames.forEach(item => {
     let { motorId, location: loc_ref, speed: limit_spd } = item;
-    keyframes.push({
+    let cmd =  Loc_Director({ motorId, limit_spd, loc_ref });
+    cmdsWithTime.push({
       time: item.time,
-      action: () => {
-        let cmds = Loc_Director({ motorId, limit_spd, loc_ref });
-        // armStore
-        // console.log('cmds: ', cmds);
-        // console.log('armStore.map: ', armStore.map);
-      }
+      // motorId,
+      cmd
     });
   });
-  // keyframes;
-  // debugger;
+  console.log('getAnimationCmds:', cmdsWithTime);
+  // //  debugger;
 
-  // // 计算关键帧的详细信息
-  // // 这里可以根据具体需求实现
-  // // 返回一个包含关键帧信息的数组
-  // return [
-  //   { time: 0, action: () => console.log('Start Animation') },
-  //   { time: 1000, action: () => console.log('Mid Animation') },
-  //   { time: 2000, action: () => console.log('End Animation') }
-  // ];
+  // return cmdsWithTime;
+}
+
+/**
+ * @description 插帧函数 根据贝塞尔曲线进行插帧    
+ * @param {*} keyframes
+ * @param {*} time
+ * @param {*} action
+ */
+function insertFrame(keyframe, nextKeyframe, splitCount = 2) {
+  // splitCount = 2时，表示取两个点即首位两个点，数组从0开始，所以需要-1 
+  splitCount = splitCount - 1;
+  console.log("--关键帧insertFrame: ", keyframe, nextKeyframe, splitCount);
+
+  let timeDelta = nextKeyframe.time - keyframe.time;
+
+  let locationDelta = nextKeyframe.location - keyframe.location;
+  // 平均速度 rad / s 举例： 180°(角度) = Math.PI(弧度) ; time是毫秒，在此要转为秒
+  let avgSpeed = (locationDelta / 180 * Math.PI) / (timeDelta / 1000);
+
+  let timingFunction = handleTimingFunc(nextKeyframe.timingFunction || 'linear');
+
+  let keyframes = [];
+  let preCoord = [0, 0];
+  
+  for(let i = 0; i <= splitCount; i++) {
+    let t = i / splitCount;
+    // let coordinate = bezierCurve([0, 0], [1, 1], t);
+
+    timingFunction;
+    // debugger;
+    let p1 = timingFunction.slice(0, 2);
+    let p2 =timingFunction.slice(2, 4)
+    let coordinate = bezierCurve(p1, p2, t);
+    // debugger;
+   
+    let newFrame = {
+      time: parseInt(keyframe.time + timeDelta * coordinate[0]),
+      motorId: keyframe.motorId, 
+      // location: keyframe.location + locationDelta * coordinate[1], 
+      location: (keyframe.location + locationDelta * coordinate[1]) / 180 * Math.PI, // 转换为弧度
+      speed: avgSpeed * (coordinate[1] - preCoord[1]) / (coordinate[0] - preCoord[0]) || 0, 
+    }
+
+    // // 每个关键帧的第一帧都是速度为零，前个关键帧的最后位置，是现在关键帧的起始位置
+    if(newFrame && newFrame.speed === 0) {
+      // 考虑是否将第一帧放进关键帧里
+      // 但万一有漏帧的行为呢，在此可以校准起始位置。只需将手动赋予个固定速度，如果位置就是目标位置的话，就不用被执行
+      newFrame.speed = 5;
+      // keyframes.push(newFrame);
+    }
+    // 速度太快，电机会跳起来, 暂时限制15
+    if(newFrame?.speed >= 15) {
+      newFrame.speed = 15;
+    }
+    if(newFrame && newFrame.speed){
+        keyframes.push(newFrame);
+    }
+
+  }
+  return keyframes;
+
+  function bezierCurve(p1, p2, t) {
+    // 定义起始点和结束点
+    var p0 = [0, 0];
+    var p3 = [1, 1];
+
+    // 计算贝塞尔曲线上的点
+    var x = (1 - t) * (1 - t) * (1 - t) * p0[0] + 3 * (1 - t) * (1 - t) * t * p1[0] + 3 * (1 - t) * t * t * p2[0] + t * t * t * p3[0];
+    var y = (1 - t) * (1 - t) * (1 - t) * p0[1] + 3 * (1 - t) * (1 - t) * t * p1[1] + 3 * (1 - t) * t * t * p2[1] + t * t * t * p3[1];
+
+    // 返回坐标结果
+    return [x, y];
+  }
+
+  function handleTimingFunc(str) {
+    const predefine = {
+      'ease': '.25,.1,.25,1',
+      'linear': '0,0,1,1',
+      'ease-in': '.42,0,1,1',
+      'ease-out': '0,0,.58,1',
+      'ease-in-out':'.42,0,.58,1'
+    }
+    let bezierStr = str;
+
+    if(Reflect.has(predefine, str)) {
+      bezierStr = predefine[str];
+    }
+    let bezierArr = bezierStr.split(",");
+
+    return bezierArr;
+  }
+
 }
 
 
@@ -87,7 +211,7 @@ function runKeyframeAnimation(keyframes) {
 // ]);
 
 export {
-  computedKeyframeDetails,
+  getAnimationCmds,
   runKeyframeAnimation
 };
 

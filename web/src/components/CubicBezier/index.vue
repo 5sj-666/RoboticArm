@@ -12,7 +12,7 @@
 </template>
 <script setup>
   import { nextTick, onMounted, ref, watch, watchEffect } from 'vue';
-
+  
   import _ from "lodash";
 
   const props = defineProps({
@@ -43,6 +43,15 @@
           padding: {},
         }
       }
+    },
+    // 采样贝塞尔曲线，并绘制出来
+    polylineBezier: { 
+      type: Boolean,
+      default: false
+    },
+    polylineCount: { // 采样点数量 >= 2
+      type: Number,
+      default: 10
     }
    
   });
@@ -94,6 +103,8 @@
         backgroundColor: props.backgroundColor,
         interact: props.interact,
         padding: props.canvasPadding,
+        // polylineBezier: props.polylineBezier,
+        // polylineCount: props.polylineCount,
       })
       console.log(cubic);
     })
@@ -324,6 +335,7 @@
       // console.log('--this.style.bezierLine.strokeWidthL:', this.style.bezierLine.lineWidth);
       // debugger;
       ctx.moveTo(start.x, start.y);
+      // 贝塞尔曲线绘制
       ctx.bezierCurveTo(cp1.x, cp1.y, cp2.x, cp2.y, end.x, end.y);
       ctx.stroke();
     
@@ -349,6 +361,9 @@
       drawArc({point: cp1, ...this.style.cp1}, this.ratio)
       drawArc({point: cp2, ...this.style.cp2}, this.ratio)
 
+      if(props.polylineBezier) {
+        this.bezierToPolyline(ctx, [start.x, start.y],[cp1.x, cp1.y], [cp2.x, cp2.y],[end.x, end.y], props.polylineCount);
+      }
 
       // drawArc({point: {x: 150, y: 150}, fillStyle: 'yellow', strokeStyle: 'black', lineWidth: 5})
 
@@ -482,7 +497,71 @@
       }
     }
 
+    // 采样贝塞尔曲线上的等分点并用直线连接
+  bezierToPolyline(ctx, start, p1, p2, end, splitCount) {
+    if(splitCount < 2) {
+      splitCount = 2;
+    }
+    
+    let prePoint = [start[0], start[1]];
+
+    for (let i = 0; i <= splitCount; i++) {
+      let t = i / splitCount;
+      let coordinate = getBezierCurvePoints(start, p1, p2, end, t);
+      drawPoint(coordinate[0],coordinate[1], ctx);
+      linkWithLine(prePoint, coordinate, ctx);
+      prePoint = coordinate;
+    }
+
+    /**
+     * @description 计算贝塞尔曲线上的点
+     * @param start 
+     * @param p1 
+     * @param p2 
+     * @param end 
+     * @param t 
+     */
+    function getBezierCurvePoints(start, p1, p2, end, t) {
+      // 定义起始点和结束点
+      var p0 = start;
+      var p3 = end;
+
+      // 计算贝塞尔曲线上的点
+      var x = (1 - t) * (1 - t) * (1 - t) * p0[0] + 3 * (1 - t) * (1 - t) * t * p1[0] + 3 * (1 - t) * t * t * p2[0] + t * t * t * p3[0];
+      var y = (1 - t) * (1 - t) * (1 - t) * p0[1] + 3 * (1 - t) * (1 - t) * t * p1[1] + 3 * (1 - t) * t * t * p2[1] + t * t * t * p3[1];
+
+      // 返回坐标结果
+      return [x, y];
+    }
+
+    //  绘制背景为红色的圆
+    function drawPoint(x, y, ctx) {
+      ctx.beginPath();
+      ctx.arc(x, y, 4, 0, 2 * Math.PI);
+      ctx.fillStyle = "red";
+      ctx.fill();
+      ctx.closePath();
+    }
+
+    function linkWithLine(prePoint, coordinate, ctx) {
+      ctx.beginPath();
+      ctx.moveTo(prePoint[0], prePoint[1]);
+      ctx.lineWidth = 2;
+      ctx.strokeStyle = "yellow"
+      ctx.lineTo(coordinate[0], coordinate[1]);
+      ctx.stroke();
+      ctx.closePath();
+    }
+
   }
+
+  }
+
+
+  
+
+ 
+
 
 
 </script>

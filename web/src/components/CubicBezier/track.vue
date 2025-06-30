@@ -1,7 +1,7 @@
 <template>
   <canvas 
     ref="refTrace" 
-    width="600" 
+    width="535" 
     height="50"
     style="border: 2px solid green"
   ></canvas>
