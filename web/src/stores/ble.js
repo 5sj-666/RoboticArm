@@ -13,11 +13,16 @@ export const useBleStore = defineStore('BLE', {
       status: 'disconnected', // 枚举值[ connecting, connected, disconnecting, disconnected ] 待完善
       msgQueue: [], // 消息队列
       queueTimer: null,
-      sendInterval: 100, // 发送间隔，单位ms
+      sendInterval: 30, // 发送间隔，单位ms
+      mainStore: null, 
       test: "BLE Store"
     }
   },
   actions: {
+    // 由于init函数需要访问mainStore，所以需要在使用前注入mainStore
+    injectMainStore(mainStore) {
+      this.mainStore = mainStore;
+    },
     async availableFunc() {
       let available = await navigator.bluetooth.getAvailability();
       ElNotification.closeAll();
@@ -91,7 +96,8 @@ export const useBleStore = defineStore('BLE', {
         try {
           console.log("蓝牙Notification通知: ", e, "值:");
           let CAN_frame_data = Array.from(new Uint8Array(e.target.value.buffer));
-          recordCmd.value.push({ type: 'receive', data: CAN_frame_data, status: 'received' });
+          // recordCmd.value.push({ type: 'receive', data: CAN_frame_data, status: 'received' });
+          this.mainStore.addCmdsHistory({ type: 'receive', data: CAN_frame_data, status: 'received' });
         } catch (error) {
           console.error("蓝牙Notification通知错误: ", error);
         }

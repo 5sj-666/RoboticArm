@@ -7,7 +7,6 @@
       style="background: transparent"
     >
     </canvas> 
-      <!-- id="refCubicBezier"  -->
   </div>
 </template>
 <script setup>
@@ -16,7 +15,7 @@
   import _ from "lodash";
 
   const props = defineProps({
-    transitionTimingFunction: {
+    timingFunction: {
       type: String,
       default: ".2,.8,.8,.26"
     },
@@ -25,7 +24,7 @@
       default: "300px"
     },
     backgroundColor: {
-      type: String,
+      type: [String, Array],
       default: ["#ccc", "#fff"]
     },
     interact: { // 是否需要交互
@@ -56,49 +55,57 @@
    
   });
 
-  const emits = defineEmits(['newBezier']);
+  function update(timingFunction) {
+    cubic.update(timingFunction);
+  }
 
+  // 暴露给父组件
+  defineExpose({
+    update
+  })
 
+  const emits = defineEmits(['newBezier', 'update:timingFunction']);
 
   let cubic;
-
- 
 
   const refCubicBezier = ref(null);
 
       
+  // const predefine = {
+  //   'ease': '.25,.1,.25,1',
+  //   'linear': '0,0,1,1',
+  //   'ease-in': '.42,0,1,1',
+  //   'ease-out': '0,0,.58,1',
+  //   'ease-in-out':'.42,0,.58,1'
+  // }
   const predefine = {
-    'ease': '.25,.1,.25,1',
-    'linear': '0,0,1,1',
-    'ease-in': '.42,0,1,1',
-    'ease-out': '0,0,.58,1',
-    'ease-in-out':'.42,0,.58,1'
+    'ease': '0.25,0.10,0.25,1.00',
+    'linear': '0.00,0.00,1.00,1.00',
+    'ease-in': '0.42,0.00,1.00,1.00',
+    'ease-out': '0.00,0.00,0.58,1.00',
+    'ease-in-out':'0.42,0.00,0.58,1.00'
   }
+  
+  
 
-  function getBezierStr(str) {
-    let transitionTimingFunction = str;
+  function getBezierStr(timingFunction) {
 
-    if(Reflect.has(predefine, props.transitionTimingFunction)) {
-      transitionTimingFunction = predefine[props.transitionTimingFunction];
+    if(Reflect.has(predefine, timingFunction)) {
+      timingFunction = predefine[timingFunction];
     }
 
-    return transitionTimingFunction;
+    return timingFunction;
   }
 
-  watch(() => props.transitionTimingFunction, () => {
-    if(cubic && props.transitionTimingFunction){
-      cubic.update(getBezierStr(props.transitionTimingFunction));
-    }
-  })
 
 
   onMounted(() => {
     nextTick(() => {
-      props.transitionTimingFunction;
-      console.log('props.transitionTimingFunction: ', props.transitionTimingFunction); 
+      props.timingFunction;
+      // console.log('props.timingFunction: ', props.timingFunction); 
 
       cubic = new CubicBezier({
-        cubicBezierStr: getBezierStr(props.transitionTimingFunction), 
+        cubicBezierStr: getBezierStr(props.timingFunction), 
         dom: refCubicBezier.value, 
         backgroundColor: props.backgroundColor,
         interact: props.interact,
@@ -106,7 +113,7 @@
         // polylineBezier: props.polylineBezier,
         // polylineCount: props.polylineCount,
       })
-      console.log(cubic);
+      // console.log(cubic);
     })
     
   })
@@ -175,9 +182,8 @@
     }
 
     // constructor({cubicBezierStr, canvasId="#refCubicBezier"}) {
-    constructor({cubicBezierStr, dom, backgroundColor, interact = true, padding = 0}) {
+    constructor({cubicBezierStr, dom, backgroundColor, interact = false, padding = 0}) {
       this.action.able = interact;
-
       this.cubicBezierStr = cubicBezierStr;
  
       this.refCanvas = dom;
@@ -250,7 +256,7 @@
 
       if(typeof arr === "string") {
         arr = (arr + "").split(",");
-        console.log(arr);
+        // console.log(arr);
       }
 
       if(Array.isArray(arr) && arr.length >= 4) {
@@ -260,11 +266,11 @@
       
       let maxY =  ratio;
       for(let key in points) {
-        console.log(points[key])
+        // console.log(points[key])
         points[key].x = points[key].x * ratio + this.style.padding.x;
         // 画布的左上角是[0,0]。 展示给用户看的是左下角是[0,0]。在此做处理
         points[key].y = maxY - points[key].y * ratio + this.style.padding.y;
-        console.log('--resolved: ', points[key])
+        // console.log('--resolved: ', points[key])
       }
 
       return points;
@@ -274,6 +280,14 @@
     drawBg(stripCount = 10, colorArr=[]) {
       let {width, height} = this.refCanvas.getBoundingClientRect();
       // console.log(width, height);
+      // 暂时解决在size = 55时候，纯背景会有斑马线
+      if(colorArr.length === 1) {
+        this.ctx.fillStyle = colorArr[0] || "#fff";
+        this.ctx.fillRect( 0, 0, width, height);
+        this.ctx.closePath();
+        return ;
+      }
+      // 在size = 55时候，纯背景会有斑马线（原因可能是height/ 10得出的值问题），待修复
       for(let i = 0;  i < stripCount; i++) {
         this.ctx.beginPath();
         // this.ctx.fillStyle = i % 2 === 0 ? "#f0f0f0" : "#FFF";
@@ -312,7 +326,7 @@
       let ctx = this.ctx;
       ctx.lineWidth = 0.02 * this.ratio;
       ctx.strokeStyle = this.style.reference.strokeStyle || "#aaa";
-      console.warn("--ctx.strokeStyle:", ctx.strokeStyle, this);
+      // console.warn("--ctx.strokeStyle:", ctx.strokeStyle, this);
       ctx.beginPath();
       ctx.moveTo(this.points.start.x, this.points.start.y);
       ctx.lineTo(this.points.end.x, this.points.end.y);
@@ -338,28 +352,36 @@
       // 贝塞尔曲线绘制
       ctx.bezierCurveTo(cp1.x, cp1.y, cp2.x, cp2.y, end.x, end.y);
       ctx.stroke();
-    
-      // 控制点连接线
-      ctx.beginPath();
-      ctx.strokeStyle = "#6a6a6a"
-      ctx.lineWidth = 2;
-      ctx.moveTo(start.x, start.y);
-      ctx.lineTo(cp1.x, cp1.y);
-      ctx.stroke();
+      
+      if(this.action.able) {
+        
+        // 控制点连接线
+        ctx.beginPath();
+        ctx.strokeStyle = "#6a6a6a"
+        ctx.lineWidth = 2;
+        ctx.moveTo(start.x, start.y);
+        ctx.lineTo(cp1.x, cp1.y);
+        ctx.stroke();
 
-      ctx.beginPath();
-      ctx.strokeStyle = "#6a6a6a"
-      ctx.lineWidth = 2;
-      ctx.moveTo(end.x, end.y);
-      ctx.lineTo(cp2.x, cp2.y);
-      ctx.stroke();
+        ctx.beginPath();
+        ctx.strokeStyle = "#6a6a6a"
+        ctx.lineWidth = 2;
+        ctx.moveTo(end.x, end.y);
+        ctx.lineTo(cp2.x, cp2.y);
+        ctx.stroke();
+
+     
+      }
 
       // 起点终点
       drawArc({point: start, ...this.style.start}, this.ratio)
       drawArc({point: end, ...this.style.end}, this.ratio)
-      // 控制点
-      drawArc({point: cp1, ...this.style.cp1}, this.ratio)
-      drawArc({point: cp2, ...this.style.cp2}, this.ratio)
+
+      if(this.action.able) {
+        // 控制点
+        drawArc({point: cp1, ...this.style.cp1}, this.ratio)
+        drawArc({point: cp2, ...this.style.cp2}, this.ratio)
+      }
 
       if(props.polylineBezier) {
         this.bezierToPolyline(ctx, [start.x, start.y],[cp1.x, cp1.y], [cp2.x, cp2.y],[end.x, end.y], props.polylineCount);
@@ -394,21 +416,22 @@
     update(bezierStr = "") {
       if(bezierStr) {
         this.cubicBezierStr = bezierStr;
-        this.points = this.getCtrlPoint(this.cubicBezierStr, this.ratio);
-        // console.log(" this.points: ",  this.points);
-        // debugger;
+        let formateTimingFunction = getBezierStr(bezierStr);
+        this.points = this.getCtrlPoint(formateTimingFunction, this.ratio);
       }
 
       // 直接通过更新的控制点，重新渲染
       this.ctx.clearRect(0, 0, this.refCanvas.width, this.refCanvas.height);
       this.drawBg(10, this.backgroundColor);
-      // this.drawCoord();
-      this.drawLinearReference();
+      if(this.action.able) {
+        this.drawLinearReference();
+      }
+      
       this.draw();
     }
 
     mousedownFunc(e) {
-      console.log('--mouseDownFunc', e);
+      // console.log('--mouseDownFunc', e);
       let {cp1, cp2} = this.points;
 
       let canvasOriginCoord = {
@@ -427,11 +450,11 @@
       }
 
       if(Math.abs(canvasClickPoint.x - cp1.x) < 10 && Math.abs(canvasClickPoint.y - cp1.y) < 10) {
-        console.log('cp1')
+        // console.log('cp1')
         this.action.currPoint = 'cp1';
         this.style.cp1.strokeStyle = "yellow";
       } else if(Math.abs(canvasClickPoint.x - cp2.x) < 10 && Math.abs(canvasClickPoint.y - cp2.y) < 10) {
-        console.log('cp2')
+        // console.log('cp2')
         this.action.currPoint = 'cp2';
         this.style.cp2.strokeStyle = "yellow";
       }
@@ -443,24 +466,41 @@
     mouseMoveFunc(e) {
       
       if(this.action.dragAble) {
-        console.log('mouseMoveFunc', e)
+        // console.log('mouseMoveFunc', e);
         if(this.action.currPoint) {
           let canvasOriginCoord = {
             x: this.refCanvas.getBoundingClientRect().left,
             y: this.refCanvas.getBoundingClientRect().top
           }
+          let deltaX = e.clientX - canvasOriginCoord.x;
+          let deltaY = e.clientY - canvasOriginCoord.y;
           this.points[this.action.currPoint] = {
-            x: e.clientX - canvasOriginCoord.x,
-            y: e.clientY - canvasOriginCoord.y,
+            // x: limitVal(deltaX, this.ratio),
+            // y: limitVal(deltaY, this.ratio),
+            x: deltaX,
+            y: deltaY,
           }
         }
         this.update();
+      }
+
+      /**
+       * @description 限制数值在0-1之间
+       * @param num 
+       */
+      function limitVal(num, ratio) {
+        if(num <= 0) {
+          return 0;
+        } else if(num >= 1 * ratio) {
+          return 1;
+        }
+        return num;
       }
       
     }
 
     mouseupFunc(e) {
-      console.log('mouseupFunc', e)
+      // console.log('mouseupFunc', e)
 
       this.action.dragAble = false;
       this.action.currPoint = null;
@@ -471,7 +511,7 @@
     }
 
     mouseleaveFunc(e) {
-      console.log('mouseleaveFunc', e);
+      // console.log('mouseleaveFunc', e);
 
       this.action.dragAble = false;
       this.action.currPoint = null;
@@ -483,14 +523,24 @@
 
     calcBezierStr() {
       let {cp1, cp2} = this.points;
-      let str = `${toFix(cp1.x / this.ratio)},${toFix(1 - cp1.y  / this.ratio)},${toFix(cp2.x  / this.ratio)},${toFix(1 - cp2.y  / this.ratio)}`;
-      this.refCanvas.style["transition-timing-function"] = str;
-      console.log("---transition-timing-function: ", str);
+
+      let str = `${toFix((cp1.x - this.style.padding.x) / this.ratio)},${toFix(1 - (cp1.y - this.style.padding.y)  / this.ratio)},${toFix((cp2.x - this.style.padding.x)  / this.ratio)},${toFix(1 - (cp2.y - this.style.padding.y)  / this.ratio)}`;
+      // this.refCanvas.style["transition-timing-function"] = str;
+      // console.log("---transition-timing-function: ", str);
 
       // emits('newBezier', `cubic-bezier(${str})`);
-      emits('newBezier', {p1: [toFix(cp1.x / this.ratio), toFix(1 - cp1.y  / this.ratio)], p2: [toFix(cp2.x  / this.ratio), toFix(1 - cp2.y  / this.ratio)]});
+      // emits('newBezier', {p1: [toFix(cp1.x / this.ratio), toFix(1 - cp1.y  / this.ratio)], p2: [toFix(cp2.x  / this.ratio), toFix(1 - cp2.y  / this.ratio)]});
+      let bezierPresets = "";
+      for(let key in predefine) {
+        if(predefine[key] === str) {
+          bezierPresets = key;
+          break;
+        }
+      }
 
-      return `cubic-bezier(${str})`;
+      emits('update:timingFunction', bezierPresets || str);
+
+      // return `cubic-bezier(${str})`;
 
       function toFix(num) {
         return num.toFixed(2);
@@ -558,21 +608,10 @@
   }
 
 
-  
-
- 
-
-
-
 </script>
 <style scoped>
   .container {
-    /* width: 300px;
-    height: 300px; */
     flex: 0;
-    /* border: 3px solid blue;
-    border-top: none;
-    border-right: none; */
   }
   #cubicBezier {
     /* background: #333; */

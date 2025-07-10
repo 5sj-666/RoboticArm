@@ -7,7 +7,13 @@ export const useMainStore = defineStore('main', {
       enableBezier: false, // 是否支持贝塞尔曲线
       enableMotor: false, // 是否使能电机
       // Array<{type: enum[send | receive], data: str , status: enum[success | error | receive], msg: str}>
-      cmdsHistory: []
+      cmdsHistory: [],
+      actionList: [
+        // {
+        //   name: '',
+        //   keyframes: [],
+        // }
+      ]
      }
   },
   actions: {
@@ -33,6 +39,18 @@ export const useMainStore = defineStore('main', {
         const pad = n => n.toString().padStart(2, '0');
         return `${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`;
       }
+    },
+    /**
+     * @description 添加动作到动作列表
+     * @param {Object} action 动作对象，{name: str, keyframes: Array}
+     */
+    addAction(action) {
+      if (!action || !action.name || !Array.isArray(action.keyframes)) {
+        console.error('Invalid action object:', action);
+        return;
+      }
+      this.actionList.push(action);
+      console.log('addAction:', action);
     }
   },
 })

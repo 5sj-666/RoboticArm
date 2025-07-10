@@ -29,7 +29,7 @@ import { Loc_Director } from '@/utils/CyberGear.js';
     对数据格式做下说明: 数组里的item，表明在time这个时刻，id为motorId的电机，需要位移到location这个位置，移动过程中的速度（可变速度）通过timing function来控制
  * @returns { Array<{time: number, action: function}>} 返回一个包含关键帧信息的数组
  */
-function getAnimationCmds(keyframes, armModelStore, enableBezier = false) {
+function getAnimationCmds(keyframes, armModelStore, bleStore, mainStore) {
   // 所有的frames(帧信息)数组
   let allFrames = [];
 
@@ -38,7 +38,7 @@ function getAnimationCmds(keyframes, armModelStore, enableBezier = false) {
     let nextFrame = keyframes[i + 1];
 
     let splitCount = 2; // 默认插帧数量为2
-    if(enableBezier) {
+    if(mainStore && mainStore.enableBezier) {
       splitCount = 5;
     }
     let insetKeyframes = insertFrame(curFrame, nextFrame, splitCount);
@@ -68,10 +68,22 @@ function getAnimationCmds(keyframes, armModelStore, enableBezier = false) {
       // motorId,
       cmd
     });
+
+    setTimeout(() => {
+      bleStore.sendMsg(cmd[0], mainStore);
+      bleStore.sendMsg(cmd[1], mainStore);
+      bleStore.sendMsg(cmd[2], mainStore);
+    }, item.time);
   });
+
   console.log('getAnimationCmds:', cmdsWithTime);
   // //  debugger;
 
+  // let time
+  // this.queueTimer = setInterval(() => {
+    
+  // }, 50);
+  
   // return cmdsWithTime;
 }
 

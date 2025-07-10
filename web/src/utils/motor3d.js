@@ -7,6 +7,15 @@ import { TransformControls } from 'three/addons/controls/TransformControls.js'; 
 class motor3d {
   constructor(selector) {    
     this.container = document.querySelector(selector); //获取容器
+
+    this.width = this.container.offsetWidth;
+    this.height = this.container.offsetHeight;
+    // debugger;
+    // this.container;
+    // const { width, height } = this.container.getBoundingClientRect()
+    // debugger;
+    
+
     this.scene;
     this.camera;
     this.renderer;
@@ -66,7 +75,8 @@ class motor3d {
   }
 
   initCamera() {
-    this.camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 100)
+    // this.camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 100)
+    this.camera = new THREE.PerspectiveCamera(75, this.width / this.height, 0.1, 100)
     // this.camera.position.set(1.5, 2, 3)
     this.camera.position.set(3, 2, 4.5)
 }
@@ -76,7 +86,8 @@ initRender() {
   //设置屏幕像素比
   this.renderer.setPixelRatio(window.devicePixelRatio)
   //渲染的尺寸大小
-  this.renderer.setSize(window.innerWidth,window.innerHeight) 
+  // this.renderer.setSize(window.innerWidth,window.innerHeight) 
+  this.renderer.setSize(this.width, this.height,) 
   // 添加到容器
   this.container.appendChild(this.renderer.domElement)
 }
@@ -99,9 +110,11 @@ initRender() {
   }
 
   onWindowResize() {
-    this.camera.aspect = window.innerWidth / window.innerHeight
+    // this.camera.aspect = window.innerWidth / window.innerHeight
+    this.camera.aspect = this.width / this.height
     this.camera.updateProjectionMatrix()//更新矩阵，将3d内容投射到2d画面上转换
-    this.renderer.setSize(window.innerWidth,window.innerHeight)
+    // this.renderer.setSize(window.innerWidth,window.innerHeight)
+    this.renderer.setSize(this.width, this.height)
   }
 
 

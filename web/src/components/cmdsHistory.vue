@@ -70,7 +70,21 @@ const rowClass = ({rowData, rowIndex}) => {
 }
 
 </script>
-<style scoped></style>
+<style scoped>
+.monitor-box {
+  /* position: absolute;
+  left: 20px;
+  bottom: 20px; */
+  width: 600px;
+  height: 310px;
+  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.15);
+  box-sizing: border-box;
+  padding-right: 40px;
+  overflow: hidden;
+  user-select: none;
+}
+</style>
 <style>
 .el-table-v2_row-error {
   background: var(--el-color-danger-light-5);

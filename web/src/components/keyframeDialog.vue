@@ -6,10 +6,18 @@
     :before-close="handleClose"
     destroy-on-close
   >
-    <div class="dialog-header">
+    <!-- <div class="dialog-header">
       <h3>设计一个动作</h3>
-    </div>
+    </div> -->
+   
     <div class="dialog-body">
+
+      <el-button>新增关键帧</el-button>
+      <div v-for="joint in actionKeyFrames" :key="joint.id">
+        关节1: 
+
+      </div>
+
       
       <div style="display:flex; flex-direction: row;border: 1px solid #444">
         <div style="width: 30%">
@@ -124,7 +132,7 @@
       </div> -->
       <el-button @click="addKeyData">添加</el-button>
 
-      <el-button @click="getAnimationCmds(arr, armModelStore, mainStore.enableBezier)">测试关键帧</el-button>
+      <el-button @click="getAnimationCmds(arr, armModelStore, bleStore, mainStore)">测试关键帧</el-button>
     </div>
     <template #footer>
       <div class="dialog-footer">
@@ -145,9 +153,11 @@
   import { runKeyframeAnimation, getAnimationCmds } from "@/utils/keyframe/index.js";
   import { useArmModelStore } from '@/stores/armModel.js';
   import { useMainStore } from '@/stores/index.js';
+  import { useBleStore } from '@/stores/ble.js';
 
   const armModelStore = useArmModelStore();
   const mainStore = useMainStore();
+  const bleStore = useBleStore();
 
 
   // runKeyframeAnimation([
@@ -170,19 +180,19 @@
   let arr = reactive([
         {
           time: 0,
-          motorId: 21,
+          motorId: 22,
           location: 0,
           timingFunction: 'linear'
         },
         {
           time: 1000,
-          motorId: 21,
+          motorId: 22,
           location: 180,
           timingFunction: '0.9, 0.13, 0.88, 0.28'
         },
         {
           time: 2000,
-          motorId: 21,
+          motorId: 22,
           location: 210,
           timingFunction: '0.9, 0.13, 0.88, 0.28'
         }
@@ -211,18 +221,6 @@
 
   let rotateDeg = ref(0);
 
-  // function update() {
-  //   model.value++
-  // }
-
-  // let visible = computed(() => {
-  //   get() {
-
-  //   }, 
-  //   set() {
-
-  //   }
-  // })
 
   let interactBezierStr = ref("0.9, 0.13, 0.88, 0.28"); //ease-in
 
@@ -357,7 +355,56 @@
       value: '25',
       label: '关节5',
     },
-  ]
+  ];
+
+  let actionKeyFrames = reactive({
+    joint1: {
+      id: "21",
+      keyframes: [
+        {
+          time: 0,
+          motorId: 21,
+          location: 0,
+          timingFunction: 'linear'
+        },
+        {
+          time: 1000,
+          motorId: 21,
+          location: 180,
+          timingFunction: '0.9, 0.13, 0.88, 0.28'
+        },
+        {
+          time: 2000,
+          motorId: 21,
+          location: 210,
+          timingFunction: '0.9, 0.13, 0.88, 0.28'
+        }
+      ]
+    },
+    joint2: {
+      id: "22",
+      keyframes: [
+        {
+          time: 0,
+          motorId: 22,
+          location: 0,
+          timingFunction: 'linear'
+        },
+        {
+          time: 1000,
+          motorId: 22,
+          location: 180,
+          timingFunction: '0.9, 0.13, 0.88, 0.28'
+        },
+        {
+          time: 2000,
+          motorId: 22,
+          location: 210,
+          timingFunction: '0.9, 0.13, 0.88, 0.28'
+        }
+      ]
+    }
+  });
 
 </script>
 <style scoped>

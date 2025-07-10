@@ -1,5 +1,5 @@
 <template>
-  <section style="width: 100%; height: 100%; position: relative;">
+  <section class="main-page" style="">
   <!-- <div class="tool-box">
     <button @click="handleBlueTooth">连接蓝牙</button>
 
@@ -20,6 +20,7 @@
 
   <div class="tool-box">
     <el-button @click="showKeyframe = true">打开</el-button>
+    <el-button @click="showSetAction = true">设置动作</el-button>
     <el-button @click="setMotorInitialPoint"> 设置机械零点 </el-button>
     <el-button @click="trigger()">触发</el-button>
 
@@ -49,96 +50,103 @@
     
   </div>
 
-  <div id="scene"></div>
 
-  <div class="toggle-box">
-    <div>蓝牙连接: {{ bleStore.status === "connecting" ? "已连接" : "已断开" }}</div>
-    <!-- <div>旋转角度(0 - 360)</div> -->
+  <div id="scene" class="scene"></div>
 
-    <div class="slider-demo-block">
-      <span class="demonstration">关节5 </span>
-      <el-slider
-        v-model="joint5"
-        :min="-180"
-        :max="180"
-        :step="1"
-        show-stops
-        :marks="{
-          '-180': { style: { color: '#ddd' }, label: '-180 deg' },
-          0: { style: { color: '#ddd' }, label: '0 deg' },
-          180: { style: { color: '#ddd' }, label: '180 deg' },
-        }"
-      />
-    </div>
-    <div class="slider-demo-block">
-      <span class="demonstration">关节4 </span>
-      <el-slider
-        v-model="joint4"
-        :min="-180"
-        :max="180"
-        :step="1"
-        show-stops
-        :marks="{
-          '-180': { style: { color: '#ddd' }, label: '-180 deg' },
-          0: { style: { color: '#ddd' }, label: '0 deg' },
-          180: { style: { color: '#ddd' }, label: '180 deg' },
-        }"
-      />
+  
+  <div class="side-panel">
+    <div class="toggle-box">
+      <div>蓝牙连接: {{ bleStore.status === "connecting" ? "已连接" : "已断开" }}</div>
+      <!-- <div>旋转角度(0 - 360)</div> -->
+
+      <div class="slider-demo-block">
+        <span class="demonstration">关节5 </span>
+        <el-slider
+          v-model="joint5"
+          :min="-180"
+          :max="180"
+          :step="1"
+          show-stops
+          :marks="{
+            '-180': { style: { color: '#ddd' }, label: '-180 deg' },
+            0: { style: { color: '#ddd' }, label: '0 deg' },
+            180: { style: { color: '#ddd' }, label: '180 deg' },
+          }"
+        />
+      </div>
+      <div class="slider-demo-block">
+        <span class="demonstration">关节4 </span>
+        <el-slider
+          v-model="joint4"
+          :min="-180"
+          :max="180"
+          :step="1"
+          show-stops
+          :marks="{
+            '-180': { style: { color: '#ddd' }, label: '-180 deg' },
+            0: { style: { color: '#ddd' }, label: '0 deg' },
+            180: { style: { color: '#ddd' }, label: '180 deg' },
+          }"
+        />
+      </div>
+
+      <div class="slider-demo-block">
+        <span class="demonstration">关节3 </span>
+        <el-slider
+          v-model="joint3"
+          :min="-150"
+          :max="140"
+          :step="1"
+          show-stops
+          :marks="{
+            '-150': { style: { color: '#ddd' }, label: '-150 deg' },
+            0: { style: { color: '#ddd' }, label: '0 deg' },
+            140: { style: { color: '#ddd' }, label: '140 deg' },
+          }"
+          @change="rotateMotor({motorId: 22, limit_spd: 5, loc_ref: joint3})"
+        />
+      </div>
+
+      <div class="slider-demo-block">
+        <span class="demonstration">关节2 </span>
+        <el-slider
+          v-model="joint2"
+          :min="-95"
+          :max="95"
+          :step="1"
+          show-stops
+          :marks="{
+            '-95': { style: { color: '#ddd' }, label: '-95 deg' },
+            0: { style: { color: '#ddd' }, label: '0 deg' },
+            95: { style: { color: '#ddd' }, label: '95 deg' },
+          }"
+          @change="rotateMotor({motorId: 23, limit_spd: 2, loc_ref: joint2})"
+        />
+      </div>
+
+      <div class="slider-demo-block">
+        <span class="demonstration">关节1 </span>
+        <el-slider
+          v-model="joint1"
+          :min="-180"
+          :max="180"
+          :step="1"
+          show-stops
+          :marks="{
+            '-180': { style: { color: '#ddd' }, label: '-180 deg' },
+            0: { style: { color: '#ddd' }, label: '0 deg' },
+            180: { style: { color: '#ddd' }, label: '180 deg' },
+          }"
+          @change="rotateMotor({motorId: 21, limit_spd: 2, loc_ref: joint1})"
+        />
+      </div>
     </div>
 
-    <div class="slider-demo-block">
-      <span class="demonstration">关节3 </span>
-      <el-slider
-        v-model="joint3"
-        :min="-150"
-        :max="140"
-        :step="1"
-        show-stops
-        :marks="{
-          '-150': { style: { color: '#ddd' }, label: '-150 deg' },
-          0: { style: { color: '#ddd' }, label: '0 deg' },
-          140: { style: { color: '#ddd' }, label: '140 deg' },
-        }"
-        @change="rotateMotor({motorId: 22, limit_spd: 5, loc_ref: joint3})"
-      />
-    </div>
-
-    <div class="slider-demo-block">
-      <span class="demonstration">关节2 </span>
-      <el-slider
-        v-model="joint2"
-        :min="-95"
-        :max="95"
-        :step="1"
-        show-stops
-        :marks="{
-          '-95': { style: { color: '#ddd' }, label: '-95 deg' },
-          0: { style: { color: '#ddd' }, label: '0 deg' },
-          95: { style: { color: '#ddd' }, label: '95 deg' },
-        }"
-        @change="rotateMotor({motorId: 23, limit_spd: 2, loc_ref: joint2})"
-      />
-    </div>
-
-    <div class="slider-demo-block">
-      <span class="demonstration">关节1 </span>
-      <el-slider
-        v-model="joint1"
-        :min="-180"
-        :max="180"
-        :step="1"
-        show-stops
-        :marks="{
-          '-180': { style: { color: '#ddd' }, label: '-180 deg' },
-          0: { style: { color: '#ddd' }, label: '0 deg' },
-          180: { style: { color: '#ddd' }, label: '180 deg' },
-        }"
-        @change="rotateMotor({motorId: 21, limit_spd: 2, loc_ref: joint1})"
-      />
-    </div>
+    <actionList @addAction="showSetAction = true"/>
+    <cmdsHistory />
   </div>
 
-  <cmdsHistory />
+  <SetAction v-model:visible="showSetAction"/>
 
 </section>
 
@@ -153,6 +161,8 @@ import { generateCMD, Loc_Director, parse_cmd, numToUnit8Array, enable_Director,
 import { drawBezierCurve, getCmdSeries } from "./utils/BezierCurve.js"
 import keyframeDialog from "./components/keyframeDialog.vue";
 import cmdsHistory from "./components/cmdsHistory.vue";
+import setAction from "./components/setAction.vue"
+import actionList from "./components/actionList.vue";
 
 import { useMainStore } from '@/stores/index.js';
 import { useArmModelStore } from '@/stores/armModel.js';
@@ -161,9 +171,11 @@ import { useBleStore } from '@/stores/ble.js';
 const mainStore = useMainStore();
 const armModelStore = useArmModelStore();
 const bleStore = useBleStore();
+bleStore.injectMainStore(mainStore);
 
 let armInstanceRef = ref(null);
 let showKeyframe = ref(false);
+let showSetAction = ref(false);
 
 
 /**
@@ -183,6 +195,7 @@ onMounted(() => {
   // console.log('---info: ', info);
 
   armInstanceRef.value = new motor3d("#scene");
+  // armInstanceRef.value = {};
   // console.log("--armInstance：", armInstance);
   console.log(armModelStore.armInstance);
   armModelStore.setInstance(armInstanceRef.value);
@@ -300,25 +313,51 @@ function motorEnableChange(value) {
   let cmdFrameArr = value ? enable_Director({motorId: 22}) : disable_Director({motorId: 22});
   mainStore.setEnableMotor(value);
   bleStore.sendMsg(cmdFrameArr[0], mainStore);
+  // 设置位置模式
+  bleStore.sendMsg(cmdFrameArr[1], mainStore);
+
 }
 
 </script>
 
 <style scoped>
-body,
-#scene {
+/* body{
+  display: flex;
+  overflow: hidden;
+} */
+.main-page {
+  position: relative;
+  display: flex;
+  width: 100%; 
+  height: 100%; 
+}
+
+.scene {
+  width: calc(100% - 400px);
+  height: 100%;
+  flex-shrink: 1;
+  flex-grow: 1;
   overflow: hidden;
 }
+
+.side-panel {
+  width: 550px;
+  height: 100%;
+  flex-shrink: 0;
+  flex-grow: 0;
+  background: #333;
+}
+
 
 .tool-box {
   position: absolute;
 }
 
 .toggle-box {
-  position: absolute;
+  /* position: absolute;
   right: 20px;
-  top: 20px;
-  width: 500px;
+  top: 20px; */
+  width: 100%;
   /* height: 220px; */
   border-radius: 10px;
   background: rgba(255, 255, 255, 0.15);
@@ -352,24 +391,11 @@ body,
   flex: 0 0 85%;
 }
 
-.monitor-box {
-  position: absolute;
-  left: 20px;
-  bottom: 20px;
-  width: 600px;
-  height: 310px;
-  border-radius: 3px;
-  background: rgba(255, 255, 255, 0.15);
-  box-sizing: border-box;
-  padding-right: 40px;
-  overflow: hidden;
-  user-select: none;
-}
-
-
 </style>
 <style>
 html, body, #app {
+  width: 100%;
+  height: 100%;
   overflow: hidden;
 }
 </style>
