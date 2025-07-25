@@ -531,12 +531,12 @@
       // emits('newBezier', `cubic-bezier(${str})`);
       // emits('newBezier', {p1: [toFix(cp1.x / this.ratio), toFix(1 - cp1.y  / this.ratio)], p2: [toFix(cp2.x  / this.ratio), toFix(1 - cp2.y  / this.ratio)]});
       let bezierPresets = "";
-      for(let key in predefine) {
-        if(predefine[key] === str) {
-          bezierPresets = key;
-          break;
-        }
-      }
+      // for(let key in predefine) {
+      //   if(predefine[key] === str) {
+      //     bezierPresets = key;
+      //     break;
+      //   }
+      // }
 
       emits('update:timingFunction', bezierPresets || str);
 

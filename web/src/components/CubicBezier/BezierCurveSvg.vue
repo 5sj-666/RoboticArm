@@ -26,17 +26,28 @@ const timingMap = {
 }
 
 const bezierPoints = computed(() => {
+  // props;
+  // debugger;
   if (props.points && props.points.length === 4) return props.points
   // 自动生成贝塞尔点
   // const [w, h] = [props.width, props.height]
+  // console.log(props.points, props.timingFunction, props.points.map(s => {return parseFloat(s)}));
+  let controlPoints = [];
+  console.log('timingMap[props.timingFunction]', timingMap[props.timingFunction]);
+  if(!timingMap[props.timingFunction]) {
+    controlPoints = props.timingFunction.split(",").map(s => {return parseFloat(s)});
+  }else {
+    controlPoints = timingMap[props.timingFunction]
+  }
+  console.log("--controlPoints: ", controlPoints);
   const [w, h] = [100, 100]
   const [x0, y0, x3, y3] = [10, h - 10, w - 10, 10]
-  const [x1, y1, x2, y2] = timingMap[props.timingFunction] 
+  const [x1, y1, x2, y2] = controlPoints 
     ? [
-        x0 + (x3 - x0) * timingMap[props.timingFunction][0],
-        y0 + (y3 - y0) * timingMap[props.timingFunction][1],
-        x0 + (x3 - x0) * timingMap[props.timingFunction][2],
-        y0 + (y3 - y0) * timingMap[props.timingFunction][3]
+        x0 + (x3 - x0) * controlPoints[0],
+        y0 + (y3 - y0) * controlPoints[1],
+        x0 + (x3 - x0) * controlPoints[2],
+        y0 + (y3 - y0) * controlPoints[3]
       ]
     : [x0, y0, x3, y3]
   return [
@@ -49,6 +60,7 @@ const bezierPoints = computed(() => {
 
 const bezierPath = computed(() => {
   const [p0, p1, p2, p3] = bezierPoints.value
+  // console.log("---bezierPath: ", [p0, p1, p2, p3] )
   return `M ${p0.x},${p0.y} C ${p1.x},${p1.y} ${p2.x},${p2.y} ${p3.x},${p3.y}`
 })
 </script>

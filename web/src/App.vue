@@ -142,11 +142,14 @@
       </div>
     </div>
 
-    <actionList @addAction="showSetAction = true"/>
+    <actionList 
+      @addAction="showSetAction = true" 
+      @editAction="showSetAction = true"
+    />
     <cmdsHistory />
   </div>
 
-  <SetAction v-model:visible="showSetAction"/>
+  <SetAction v-if="showSetAction" v-model:visible="showSetAction"/>
 
 </section>
 

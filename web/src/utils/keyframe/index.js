@@ -8,6 +8,7 @@
 
 
 import { Loc_Director } from '@/utils/CyberGear.js';
+import { parse } from 'vue/compiler-sfc';
 
 
 // import { useArmModelStore } from '@/stores/armModel.js'
@@ -39,7 +40,7 @@ function getAnimationCmds(keyframes, armModelStore, bleStore, mainStore) {
 
     let splitCount = 2; // 默认插帧数量为2
     if(mainStore && mainStore.enableBezier) {
-      splitCount = 5;
+      splitCount = 60;
     }
     let insetKeyframes = insertFrame(curFrame, nextFrame, splitCount);
 
@@ -62,6 +63,7 @@ function getAnimationCmds(keyframes, armModelStore, bleStore, mainStore) {
   // // debugger;
   allFrames.forEach(item => {
     let { motorId, location: loc_ref, speed: limit_spd } = item;
+    console.log("--getAnimationCmds motorId: ",motorId, "-loc_ref: ", loc_ref, "-limit_spd:", limit_spd);
     let cmd =  Loc_Director({ motorId, limit_spd, loc_ref });
     cmdsWithTime.push({
       time: item.time,
@@ -70,9 +72,16 @@ function getAnimationCmds(keyframes, armModelStore, bleStore, mainStore) {
     });
 
     setTimeout(() => {
-      bleStore.sendMsg(cmd[0], mainStore);
-      bleStore.sendMsg(cmd[1], mainStore);
-      bleStore.sendMsg(cmd[2], mainStore);
+      for(let i = 0; i < cmd.length; i++) {
+        // console.log("cmd:", cmd[i]);
+        bleStore.sendMsg(cmd[i], mainStore);
+      }
+
+      // 更改机械臂位置
+      let positionObj = {};
+      positionObj[armModelStore.map[motorId]] = loc_ref;
+      armModelStore.setPosition(positionObj);
+
     }, item.time);
   });
 
@@ -94,6 +103,16 @@ function getAnimationCmds(keyframes, armModelStore, bleStore, mainStore) {
  * @param {*} action
  */
 function insertFrame(keyframe, nextKeyframe, splitCount = 2) {
+  keyframe = JSON.parse(JSON.stringify(keyframe));
+  keyframe.location = parseFloat(keyframe.location);
+  keyframe.time = parseInt(keyframe.time);
+  keyframe.motorId = parseInt(keyframe.motorId);
+
+  nextKeyframe = JSON.parse(JSON.stringify(nextKeyframe));
+  nextKeyframe.location = parseFloat(nextKeyframe.location);
+  nextKeyframe.time = parseInt(nextKeyframe.time);
+  nextKeyframe.motorId = parseInt(nextKeyframe.motorId);
+
   // splitCount = 2时，表示取两个点即首位两个点，数组从0开始，所以需要-1 
   splitCount = splitCount - 1;
   console.log("--关键帧insertFrame: ", keyframe, nextKeyframe, splitCount);
@@ -113,7 +132,7 @@ function insertFrame(keyframe, nextKeyframe, splitCount = 2) {
     let t = i / splitCount;
     // let coordinate = bezierCurve([0, 0], [1, 1], t);
 
-    timingFunction;
+    // timingFunction;
     // debugger;
     let p1 = timingFunction.slice(0, 2);
     let p2 =timingFunction.slice(2, 4)
@@ -128,6 +147,9 @@ function insertFrame(keyframe, nextKeyframe, splitCount = 2) {
       speed: avgSpeed * (coordinate[1] - preCoord[1]) / (coordinate[0] - preCoord[0]) || 0, 
     }
 
+    // newFrame;
+    // debugger;
+
     // // 每个关键帧的第一帧都是速度为零，前个关键帧的最后位置，是现在关键帧的起始位置
     if(newFrame && newFrame.speed === 0) {
       // 考虑是否将第一帧放进关键帧里
@@ -135,7 +157,7 @@ function insertFrame(keyframe, nextKeyframe, splitCount = 2) {
       newFrame.speed = 5;
       // keyframes.push(newFrame);
     }
-    // 速度太快，电机会跳起来, 暂时限制15
+    // 速度太快，电机会跳起来, 暂时限制15 6.28rad/s = 360°/s 
     if(newFrame?.speed >= 15) {
       newFrame.speed = 15;
     }
@@ -222,93 +244,46 @@ function runKeyframeAnimation(keyframes) {
 //   { time: 2000, action: () => console.log('2000ms') },
 // ]);
 
+/**
+ * @description 移动到初始位置
+ * 这个函数可以在动画开始前调用，确保机械臂在关键帧的第一帧位置
+ */
+function moveToInitialPosition(motionList, armModelStore, bleStore) {
+  console.log("--moveToInitialPosition: ", motionList);
+  
+  motionList.joints.forEach(joint => {
+    console.log("--moveToInitialPosition joint: ", joint);
+    let { location, motorId } = joint.keyframes[0];
+
+    let cmds = Loc_Director({ motorId, limit_spd: 5, loc_ref: location / 180 * Math.PI });
+
+    let positionObj = {};
+    positionObj[joint.name] = location / 180 * Math.PI
+    armModelStore.setPosition(positionObj);
+
+
+    for(let i = 0; i < cmds.length; i++) {
+      bleStore.sendMsg(cmds[i]);
+    }
+
+  });
+
+}
+
+/**
+ * @description 计算动画每帧的位置
+ */
+function framePositions() {
+  // 遍历关键帧数
+  // 计算delta location， delta time  那么贝塞尔曲线的t就是 elapsed / deltaTime
+  // 根据 t 计算出贝塞尔曲线对应的x，y值
+  // 根据x，y值计算出位置
+  // 直接修改3d模型的位置信息
+}
+
 export {
   getAnimationCmds,
-  runKeyframeAnimation
+  runKeyframeAnimation,
+  moveToInitialPosition
 };
 
-
-
-
-// // 关键帧系统  首先要有个队列，用来存储关键帧信息，然后有个定时器（requestAnimationFrame），每隔一段时间去执行队列中的关键帧
-
-// // import { requestAnimationFrame } from './requestAnimationFrame'
-// import Queue from './queue';
-
-// /**
-//   传入是数据对象:
-//   {
-//     time: 0, // 时间
-//     motorId: number,
-//     location: number, // 位置
-//     speed: number, // 速度
-//   }
-//  */
-// const queue = Queue();
-
-// const arr = [
-//   {
-//     time: 0, // 时间
-//     data: {
-//       motorId: 22,
-//       location: 0, // 位置
-//       // speed: 5, // 速度
-//     }
-//   },
-//   {
-//     time: 1000, // 时间
-//     data: {
-//       motorId: 22,
-//       location: 180, // 位置
-//       // speed: 5, // 速度
-//     }
-//   },
-//   {
-//     time: 2000, // 时间
-//     data: {
-//       motorId: 22,
-//       location: -180, // 位置
-//       // speed: 10, // 速度
-//     }
-//   }
-// ]
-
-// /*
-//   时间系统：指令队列
-//   具体执行的指令和时间。animationFrame 会根据时间执行指令
-//   {
-//     time: 0, // 时间
-//     cmd: Array(12<hex>) // 指令
-//   }
-
-// */
-// const cmdQueue = Queue();
-
-// let startTime = null;
-
-// function animate(timestamp) {
-//   if (!startTime) startTime = timestamp;
-//   const elapsed = timestamp - startTime;
-
-//   // // 执行队列中的关键帧
-//   // while (queue.length > 0 && queue[0].time <= elapsed) {
-//   //   const keyframe = queue.shift();
-//   //   keyframe.action();
-//   // }
-
-//   // // 如果队列还有关键帧，继续动画
-//   // if (queue.length > 0) {
-//   //   requestAnimationFrame(animate);
-//   // } else {
-//   //   startTime = null; // 重置时间计数
-//   // }
-// }
-
-// // 启动关键帧动画
-// function startAnimation() {
-//   if (queue.length > 0) {
-//     requestAnimationFrame(animate);
-//   }
-// }
-
-// export { startAnimation };

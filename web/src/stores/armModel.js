@@ -6,12 +6,13 @@ export const useArmModelStore = defineStore('armModel', {
     return {
       map: {
         21: 'joint1',
-        23: 'joint2',
-        22: 'joint3',
+        22: 'joint2',
+        23: 'joint3',
         24: 'joint4',
         25: 'joint5',
       },
       armInstance: null,
+      frameInterval: 16, // 帧间隔，单位ms
       test: 1
     }
   },
@@ -42,8 +43,40 @@ export const useArmModelStore = defineStore('armModel', {
       //   }
       //   // console.log('Setting arm position:', position);
       // }
-
-
     },
+    playMotion(motion) {
+      motion;
+      debugger;
+
+      // // const element = document.getElementById("some-element-you-want-to-animate");
+      // let start, previousTimeStamp;
+      // let done = false;
+
+      // function step(timestamp) {
+      //   if (start === undefined) {
+      //     start = timestamp;
+      //   }
+      //   const elapsed = timestamp - start;
+
+      //   if (previousTimeStamp !== timestamp) {
+      //     // 这里使用 Math.min() 确保元素在恰好位于 200px 时停止运动
+      //     const count = Math.min(0.1 * elapsed, 200);
+      //     // element.style.transform = `translateX(${count}px)`;
+      //     if (count === 200) done = true;
+      //   }
+
+      //   if (elapsed < 2000) {
+      //     // 2 秒之后停止动画
+      //     previousTimeStamp = timestamp;
+      //     if (!done) {
+      //       window.requestAnimationFrame(step);
+      //     }
+      //   }
+      // }
+
+      // window.requestAnimationFrame(step);
+
+
+    }
   },
 })

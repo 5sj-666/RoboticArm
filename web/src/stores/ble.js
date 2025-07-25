@@ -161,13 +161,14 @@ export const useBleStore = defineStore('BLE', {
         this.status = 'disconnected';
       });
     },
-    startQueue(mainStore) {
+    startQueue() {
       if (this.queueTimer) return; // 已经启动
       this.queueTimer = setInterval(() => {
         // if (this.msgQueue.length > 0 && this.status === 'connected') {
-        if (this.msgQueue.length > 0) {
+        // if (this.msgQueue.length > 0 && this.connecting) {
+        if (this.msgQueue.length > 0 ) {
           const cmdFrame = this.msgQueue.shift();
-          this._sendNow(cmdFrame, mainStore);
+          this._sendNow(cmdFrame);
         }
         if (this.msgQueue.length === 0) {
           this.stopQueue();
@@ -182,11 +183,11 @@ export const useBleStore = defineStore('BLE', {
         this.queueTimer = null;
       }
     },
-    sendMsg(cmdFrame, mainStore) {
+    sendMsg(cmdFrame) {
       this.msgQueue.push(cmdFrame);
-      this.startQueue(mainStore); // 确保队列已启动
+      this.startQueue(); // 确保队列已启动
     },
-    _sendNow(cmdFrame, mainStore) {
+    _sendNow(cmdFrame) {
       console.log("ble.js发送指令", cmdFrame, '时间戳: ', new Date().getTime());
       let msgStatus = null;
       try {
@@ -199,7 +200,7 @@ export const useBleStore = defineStore('BLE', {
       // 记录消息历史
       if (msgStatus) {
         // console.warn("ble.js记录消息历史");
-        mainStore.addCmdsHistory({
+        this.mainStore.addCmdsHistory({
           type: 'send',
           data: cmdFrame,
           status: msgStatus

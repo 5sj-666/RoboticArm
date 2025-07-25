@@ -1,11 +1,11 @@
 <template>
-  <div class="monitor-box">
+  <div class="monitor-box" style="flex: 1">
     <el-table-v2
       ref="tableRef"
       :columns="columns"
       :data="mainStore.cmdsHistory"
       :row-class="rowClass"
-      :width="600"
+      :width="550"
       :height="310"
       class="el-table-v2_custom"
       header-class="el-table-v2-header_custom"

@@ -237,7 +237,9 @@ initRender() {
         gltf.scene.translateY(-0.35);
       }
       else if(type === 'five') {
-        gltf.scene.rotation.set(Math.PI / 180  * 0, Math.PI / 180 * 90,  Math.PI / 180 * -90);
+        gltf.scene.rotation.set(Math.PI / 180  * 0, Math.PI / 180 * 270,  Math.PI / 180 * 90);
+        // let oneDegree = Math.PI / 180;
+        // gltf.scene.rotation(oneDegree * 0, oneDegree * 90, oneDegree * 270);
       }
 
     } 
