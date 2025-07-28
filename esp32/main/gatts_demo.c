@@ -345,15 +345,15 @@ static void gatts_profile_a_event_handler(esp_gatts_cb_event_t event, esp_gatt_i
         unsigned int frameId = 0;
         int frameData[8];
         for(int i = 0; i < param->write.len; i++) {
-          printf("遍历蓝牙%d值: %d", i, param->write.value[i]);
+          // printf("遍历蓝牙%d值: %d", i, param->write.value[i]);
           if(i < 4) {
             frameId = frameId * 16 * 16 + param->write.value[i];
-            ESP_LOGI(GATTS_TAG, "----蓝牙 16进制 转换帧id:  %u", frameId);
+            // ESP_LOGI(GATTS_TAG, "----蓝牙 16进制 转换帧id:  %u", frameId);
           }else {
             frameData[i - 4] = param->write.value[i];
           }
         }
-        printf("frameId%u值: %d, --- %d", frameId, frameData[0], frameData[7]);
+        printf("frameId%u值: %d, --- %d  \n", frameId, frameData[0], frameData[7]);
 
         // printf("in app_main the min free stack size is %ld \r\n", (int32_t)uxTaskGetStackHighWaterMark(NULL));
         ESP_LOGI(EXAMPLE_TAG, "-----发送can数据指令------");
@@ -363,14 +363,15 @@ static void gatts_profile_a_event_handler(esp_gatts_cb_event_t event, esp_gatt_i
         ESP_LOGI(EXAMPLE_TAG, "-----发送can数据指令结束-----");
 
 
-        // 测试通知
-        uint8_t notify_data[8];
-        for (int i = 0; i < 8; ++i) {
-            notify_data[i] = frameData[i];
-        }
+        // // 测试通知
+        // uint8_t notify_data[8];
+        // for (int i = 0; i < 8; ++i) {
+        //     notify_data[i] = frameData[i];
+        // }
 
-        esp_ble_gatts_send_indicate(gl_profile_tab[PROFILE_A_APP_ID].gatts_if, gl_profile_tab[PROFILE_A_APP_ID].conn_id, gl_profile_tab[PROFILE_A_APP_ID].char_handle,
-                            sizeof(notify_data), notify_data, false);
+        // esp_ble_gatts_send_indicate(gl_profile_tab[PROFILE_A_APP_ID].gatts_if, gl_profile_tab[PROFILE_A_APP_ID].conn_id, gl_profile_tab[PROFILE_A_APP_ID].char_handle,
+        //                     sizeof(notify_data), notify_data, false);
+
 
 
         // 客户端的请求是需要需要回复时候
@@ -670,16 +671,25 @@ void initBle() {
  * @description 接收报文
  */
 void receive_msg() { // 发送相同的消息时，好像有时会丢失
+  vTaskDelay(pdMS_TO_TICKS(500));
+  printf("开始接收报文 receive_msg");
   while(true) { // FreeRTOS: FreeRTOS Task "TWAI_rx" should not return, Aborting now! 这个函数应该要死循环，不然报错
     twai_message_t rx_msg;
     twai_receive(&rx_msg, portMAX_DELAY);
     ESP_LOGW(EXAMPLE_TAG, "接收接收到can信号: %lu", rx_msg.identifier);
     
     // 发送通知
-    // uint8_t notify_data[8];
+    uint8_t notify_data[12];
+
     // for (int i = 0; i < sizeof(rx_msg.data); ++i) {
-    //     notify_data[i] = rx_msg.data[i];
-    // }
+    for (int i = 0; i < 12; ++i) {
+      if(i < 4) {
+        notify_data[i] = (rx_msg.identifier >> (8 * (3 - i))) & 0xff;
+      }else {
+        notify_data[i] = rx_msg.data[i - 4];
+      }
+        
+    }
     
     // 向 GATT 客户端发送指示或通知。将参数 need_confirm 设置为 false 将发送通知，否则为指示。注意：指示或通知数据的大小需要小于 MTU 大小，请参阅“esp_ble_gattc_send_mtu_req”。
     // 参数
@@ -699,7 +709,82 @@ void receive_msg() { // 发送相同的消息时，好像有时会丢失
 
     // esp_ble_gatts_send_indicate(gl_profile_tab[PROFILE_A_APP_ID].gatts_if, gl_profile_tab[PROFILE_A_APP_ID].conn_id, gl_profile_tab[PROFILE_A_APP_ID].char_handle,
     //                         sizeof(notify_data), notify_data, false);
+    esp_ble_gatts_send_indicate(gl_profile_tab[PROFILE_A_APP_ID].gatts_if, gl_profile_tab[PROFILE_A_APP_ID].conn_id, gl_profile_tab[PROFILE_A_APP_ID].char_handle,
+                              sizeof(notify_data), notify_data, false);
   }
+}
+
+void ctrl_task(void *arg)
+{
+    twai_reconfigure_alerts(TWAI_ALERT_ABOVE_ERR_WARN | TWAI_ALERT_ERR_PASS | TWAI_ALERT_BUS_OFF | TWAI_ALERT_ARB_LOST | TWAI_ALERT_ERR_ACTIVE | TWAI_ALERT_RECOVERY_IN_PROGRESS | TWAI_ALERT_ABOVE_ERR_WARN, NULL); // TWAI_ALERT_BUS_ERROR
+
+    while (true) {
+        uint32_t alerts;
+        twai_read_alerts(&alerts, portMAX_DELAY);
+        if(alerts) {
+          switch(alerts) {
+            case TWAI_ALERT_TX_IDLE: 
+              printf("队列中无待传输报文 TWAI_ALERT_TX_IDLE \n");
+              break;
+
+            case TWAI_ALERT_TX_SUCCESS: 
+              printf("上一次传输成功 TWAI_ALERT_TX_SUCCESS \n");
+              break;
+
+            case TWAI_ALERT_RX_DATA: 
+              printf("收到一帧数据并添加到RX队列 TWAI_ALERT_RX_DATA \n");
+              break;
+            
+            case TWAI_ALERT_BELOW_ERR_WARN: 
+              printf("两个错误计数器都低于错误报警限制 TWAI_ALERT_BELOW_ERR_WARN \n");
+              break;
+
+            case TWAI_ALERT_ERR_ACTIVE: 
+              printf("TWAI 控制器已进入主动错误状态 TWAI_ALERT_ERR_ACTIVE \n");
+              break;
+
+            case TWAI_ALERT_RECOVERY_IN_PROGRESS: 
+              printf("TWAI控制器正在进行离线恢复 TWAI_ALERT_RECOVERY_IN_PROGRESS  \n");
+              break;
+
+            case TWAI_ALERT_BUS_RECOVERED: 
+              printf("TWAI 控制器已成功完成离线恢复 TWAI_ALERT_BUS_RECOVERED  \n");
+              break;
+            
+            case TWAI_ALERT_ARB_LOST: 
+              printf("TWAI 上一次传输丢失仲裁 TWAI_ALERT_ARB_LOST  \n");
+              break;
+
+            case TWAI_ALERT_ABOVE_ERR_WARN: 
+              printf("TWAI 有错误计数器超过了错误报警限制 TWAI_ALERT_ABOVE_ERR_WARN  \n");
+              break;
+
+            case TWAI_ALERT_BUS_ERROR: 
+              printf("TWAI 总线上发生了（位、填充、CRC、格式、ACK）错误 TWAI_ALERT_BUS_ERROR  \n");
+              break;
+
+            case TWAI_ALERT_TX_FAILED: 
+              printf("TWAI 上一次传输失败 TWAI_ALERT_TX_FAILED \n");
+              break;
+
+            case TWAI_ALERT_RX_QUEUE_FULL: 
+              printf("TWAI RX 队列已满，接收到的帧丢失 TWAI_ALERT_RX_QUEUE_FULL  \n");
+              break;
+            
+            case TWAI_ALERT_ERR_PASS: 
+              printf("TWAI 控制器已进入被动错误状态 TWAI_ALERT_ERR_PASS  \n");
+              break;
+
+            case TWAI_ALERT_BUS_OFF: 
+              printf("离线条件已触发，TWAI 控制器无法干扰总线 TWAI_ALERT_BUS_OFF \n");
+              break;
+
+            default: 
+              break;
+          }
+        }
+    }
+
 }
 
 
@@ -711,9 +796,14 @@ void app_main()
     
     initBle();
 
+    
     startTwai();
     consoleTwaiStatus(1);
-    xTaskCreatePinnedToCore(receive_msg, "TWAI_rx", 4096, NULL, 7, NULL, tskNO_AFFINITY);
 
+    twai_reconfigure_alerts(TWAI_ALERT_ABOVE_ERR_WARN | TWAI_ALERT_ERR_PASS | TWAI_ALERT_BUS_OFF, NULL);
+
+    xTaskCreatePinnedToCore(receive_msg, "TWAI_rx", 4096, NULL, 1, NULL, tskNO_AFFINITY);
+    xTaskCreatePinnedToCore(ctrl_task, "TWAI_ctrl", 4096, NULL, 2, NULL, tskNO_AFFINITY);
+    // xTaskCreatePinnedToCore(recycle_transmit_msg, "TWAI_tx", 4096, NULL, 10, NULL, tskNO_AFFINITY); 
     return ;
 }
