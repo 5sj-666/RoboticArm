@@ -1,0 +1,30 @@
+menu "Example 'GATT SERVER' Config"
+
+    config SET_RAW_ADV_DATA
+        bool "Use raw data for advertising packets and scan response data"
+        help
+            If this config item is set, raw binary data will be used to generate advertising & scan response data.
+            This option uses the esp_ble_gap_config_adv_data_raw() and esp_ble_gap_config_scan_rsp_data_raw()
+            functions.
+
+            If this config item is unset, advertising & scan response data is provided via a higher-level
+            esp_ble_adv_data_t structure. The lower layer will generate the BLE packets. This option has higher
+            overhead at runtime.
+
+    config EXAMPLE_TX_GPIO_NUM
+      int "TX GPIO number"
+      default 21 if IDF_TARGET_ESP32
+      default 0
+      help
+          This option selects the GPIO pin used for the TX signal. Connect the
+          TX signal to your transceiver.
+      
+    config EXAMPLE_RX_GPIO_NUM
+        int "RX GPIO number"
+        default 22 if IDF_TARGET_ESP32
+        default 2
+        help
+            This option selects the GPIO pin used for the RX signal. Connect the
+            RX signal to your transceiver.
+
+endmenu

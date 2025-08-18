@@ -161,6 +161,8 @@ import motor3d from "./utils/motor3d";
 import { nextTick, onMounted, ref, watchEffect, render, watch } from "vue";
 
 import { generateCMD, Loc_Director, parse_cmd, numToUnit8Array, enable_Director, disable_Director } from "./utils/CyberGear.js"
+window.parse_cmd = parse_cmd;
+window.Loc_Director = Loc_Director;
 import { drawBezierCurve, getCmdSeries } from "./utils/BezierCurve.js"
 import keyframeDialog from "./components/keyframeDialog.vue";
 import cmdsHistory from "./components/cmdsHistory.vue";

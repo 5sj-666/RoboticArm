@@ -8,6 +8,12 @@
         @click="emit('addAction')">
         新增动作
       </el-button>
+      <el-button 
+        size="small" 
+        @click="simulatorCmd">
+        模拟指令
+      </el-button>
+
     </div>
     <div
       class="action-card"
@@ -35,7 +41,7 @@
   </div>
 </template>
 <script setup>
-import { computed } from "vue";
+import { computed, onMounted } from "vue";
 import {
   moveToInitialPosition,
   getAnimationCmds,
@@ -44,6 +50,7 @@ import { useMainStore } from "@/stores/index.js";
 import { useMotionStore } from "../stores/motions";
 import { useArmModelStore } from "@/stores/armModel.js";
 import { useBleStore } from "@/stores/ble.js";
+import { parse_cmd } from "@/utils/CyberGear.js";
 
 const mainStore = useMainStore();
 const motionStore = useMotionStore();
@@ -92,6 +99,12 @@ function handleRun(action) {
   console.log("运行", action.name);
 }
 
+function simulatorCmd() {
+  let embedMsg = [0,0 , 3.14, 2, 3.14, 2, 0, 0, 0, 0, 0, 0];
+  const float32Array = new Float32Array(embedMsg);
+  bleStore.sendMsg({type: 6, msg: float32Array});
+}
+
 class BezierMotion {
   /**
    * @param {Object} options
@@ -103,6 +116,11 @@ class BezierMotion {
   constructor({ joints, onUpdate }) {
 
     this.cursors = [1, 1, 1, 1, 1, 1];
+    this.preFrameLocations = [0, 0, 0, 0, 0, 0];
+    // 帧间隔时间
+    this.frameInterval = null;
+    // 上一帧时间
+    this.lastFrameTime = null; 
     // Array<{ location, time }>
     this.delta = [];
     this.joints = joints;
@@ -124,29 +142,95 @@ class BezierMotion {
     this.isRunning = false;
   }
 
+  // _step(now) {
+  //   if (!this.isRunning) return;
+
+  //   // 计算当前帧间隔
+  //   let frameInterval = 0;
+  //   if (this.lastFrameTime !== null) {
+  //     frameInterval = now - this.lastFrameTime;
+  //     console.log('当前帧间隔:', frameInterval, 'ms');
+  //   }
+  //   this.lastFrameTime = now;
+    
+  //   const elapsed = now - this.startTime;
+  //   // const t = Math.min(elapsed / this.duration, 1);
+
+  //   let {positions, embedMsg}= getAllJointPosition({
+  //     elapsed, 
+  //     cursors: this.cursors, 
+  //     delta: this.delta, 
+  //     joints: this.joints, 
+  //     preFrameLocations: this.preFrameLocations, 
+  //     frameInterval
+  //   });
+
+  //   console.log("---动画函数执行: ", elapsed, positions, this.cursors, this.cursors.filter(item => item === 0).length, '--embedMsg: ', embedMsg);
+  //   armModelStore.setPosition(positions);
+    
+  //   if(this.cursors.filter(item => item === -1).length == this.joints.length) {
+  //     // debugger;
+  //     this.isRunning = false;
+  //     return;
+  //   } else {
+  //     requestAnimationFrame(this._step.bind(this));
+  //   }
+    
+  //   // 每帧回调
+  //   if (typeof this.onUpdate === 'function') {
+  //     this.onUpdate(elapsed);
+  //   }
+
+  // }
   _step(now) {
     if (!this.isRunning) return;
 
-    const elapsed = now - this.startTime;
-    // const t = Math.min(elapsed / this.duration, 1);
-
-    let positions = getAllJointPosition({elapsed, cursors: this.cursors, delta: this.delta, joints: this.joints});
-    console.log("---动画函数执行: ", elapsed, positions, this.cursors, this.cursors.filter(item => item === 0).length);
-    armModelStore.setPosition(positions);
-    
-    if(this.cursors.filter(item => item === -1).length == this.joints.length) {
-      // debugger;
-      this.isRunning = false;
-      return;
+    // 计算当前帧间隔
+    let frameInterval = 0;
+    if (this.lastFrameTime !== null) {
+      frameInterval = now - this.lastFrameTime;
     }else {
-      requestAnimationFrame(this._step.bind(this));
+      this.lastFrameTime = now;
     }
-    
-    // 每帧回调
-    if (typeof this.onUpdate === 'function') {
-      this.onUpdate(elapsed);
+    // 目标间隔60帧：16.67ms 30帧：33.33ms
+    const targetInterval = 1000 / 144;
+
+    // 只有间隔大于等于目标间隔时才执行动画逻辑
+    if (frameInterval >= targetInterval) {
+      this.lastFrameTime = now;
+      console.log('当前帧间隔:', frameInterval, 'ms');
+
+      const elapsed = now - this.startTime;
+      let { positions, embedMsg } = getAllJointPosition({
+        elapsed,
+        cursors: this.cursors,
+        delta: this.delta,
+        joints: this.joints,
+        preFrameLocations: this.preFrameLocations,
+        frameInterval
+      });
+      console.log("---动画函数执行: ", elapsed, positions, this.cursors, this.cursors.filter(item => item === 0).length, '--embedMsg: ', embedMsg);
+ 
+      armModelStore.setPosition(positions);
+      // 多关节数据在一个数组内发送
+      // 确保数据是 Uint8Array 并获取其 ArrayBuffer
+      // const buffer = (embedMsg instanceof Uint8Array) ? embedMsg.buffer : new Uint8Array(embedMsg).buffer;
+      const float32Array = new Float32Array(embedMsg);
+      bleStore.sendMsg({type: 6, msg: float32Array});
+      // bleStore.sendMsg({type: 6, msg: embedMsg});
+
+      if (this.cursors.filter(item => item === -1).length == this.joints.length) {
+        this.isRunning = false;
+        return;
+      }
+
+      // 每帧回调
+      if (typeof this.onUpdate === 'function') {
+        this.onUpdate(elapsed);
+      }
     }
 
+    requestAnimationFrame(this._step.bind(this));
   }
 
 }
@@ -155,9 +239,12 @@ class BezierMotion {
  * @description 获取所有关节的当前帧位置
  * @param param0 
  */
-function getAllJointPosition({elapsed, cursors, delta, joints}) {
+function getAllJointPosition({elapsed, cursors, delta, joints, preFrameLocations, frameInterval}) {
 
   let positions = {};
+  // 发送给单片机的信息，数组下标0-1表示21电机，2-3表示22电机，依次类推。
+  // arr[0 + n*2] = location, arr[1 + n*2] = speed。 
+  let embedMsg = new Array(12).fill(0); 
   // 遍历所有关节，计算当前机械臂关节应该在什么位置
   for (let i = 0; i < joints.length; i++) {
     // 如果是 -1 的话,即超出
@@ -187,7 +274,7 @@ function getAllJointPosition({elapsed, cursors, delta, joints}) {
       let pre = joints[i].keyframes[cursors[i] - 1];
       cur = joints[i].keyframes[cursors[i]];
 
-      // 差值计算， 算是优化，一次计算，就不用每一帧都去计算
+      // 两个关键帧之间的差值计算， 算是优化，一次计算，就不用每一帧都去计算
       delta[i] = {};
       delta[i].time = cur.time - pre.time;
       delta[i].location = cur.location - pre.location;
@@ -202,11 +289,21 @@ function getAllJointPosition({elapsed, cursors, delta, joints}) {
     let y = bezierXToY(t, p1, p2);
 
     let locationTarget = cur.location - delta[i].location * (1 - y);
+    let speed = (locationTarget - preFrameLocations[i]) / frameInterval * Math.PI / 180 * 1000; // 转换为弧度每秒
+    if(speed > 15) {
+      console.warn(`电机 ${joints[i].name} 的速度过快: ${speed} rad/s`);
+      speed = 15; // 限制最大速度为15
+    }
+
     positions[joints[i].name] = (locationTarget * Math.PI) / 180;
 
+    embedMsg[i * 2] = parseFloat((locationTarget * Math.PI) / 180);
+    embedMsg[i * 2 + 1] = parseFloat(Math.abs(speed));
+
+    preFrameLocations[i] = locationTarget;
   }
 
-  return positions;
+  return {positions, embedMsg};
 }
 
 /**
@@ -287,6 +384,87 @@ function bezierXToY(xTarget, p1, p2, epsilon = 1e-6, maxIter = 100) {
     3 * y2 * (1 - t) * Math.pow(t, 2) +
     y3 * Math.pow(t, 3)
   );
+}
+
+  // 塞入三个指令: 设置模式, 设置速度,设置位置，
+  // let TWAI_id = new Array(4).fill(0);
+  // let TWAI_data = new Array(8).fill(0);
+  // enable: ({motorId}) => {
+  //       TWAI_id = [0x03, 0x00, 0xfd, motorId];
+  //     },
+  // 更改运行模式, 通信类型18
+  // run_mode: ({motorId, run_mode}) => {
+  //   TWAI_id = [0x12, 0x00, 0xfd, motorId];
+  //   TWAI_data = [0x05, 0x70, 0x00, 0x00, run_mode, 0x00, 0x00, 0x00];
+  // }
+  // 设置速度，通信类型18， limit_spd: [0 - 30]
+  // limit_spd: ({motorId, limit_spd}) => {
+  //   TWAI_id = [0x12, 0x00, 0xfd, motorId];
+  //   TWAI_data = [0x17, 0x70, 0x00, 0x00, ...numToUnit8Array(limit_spd)];
+  // },
+  // 设置要旋转的位置, 通信类型18
+  // loc_ref: ({motorId, loc_ref}) => {
+  //   TWAI_id = [0x12, 0x00, 0xfd, motorId];
+  //   TWAI_data = [0x16, 0x70, 0x00, 0x00, ...numToUnit8Array(loc_ref)];
+  // },
+
+onMounted(() => {
+  // generateCmd([0, 0, 0, 0, 0.8760904248626792, 1.5355051064121865, 0, 0, 0, 0, 0, 0], (cmd) => {
+  //   console.log('cmd:', cmd);
+  // });
+
+
+
+})
+
+function numToUnit8Array(num) {
+  // 创建一个长度为 4 的 ArrayBuffer
+  const buffer = new ArrayBuffer(4);
+  // 创建一个 DataView 来操作 ArrayBuffer
+  const dataView = new DataView(buffer);
+  // 将 64 位的 number 转换为 32 位浮点数并写入 DataView
+  dataView.setFloat32(0, num);
+  // 创建一个 Uint8Array 视图来读取数据
+  const uint8Array = new Uint8Array(buffer);
+  // 由于小米电机的数据是倒序的，所以需要反转
+  return uint8Array.reverse();
+}
+
+
+/**
+ * @description 生成指令
+ * @param {Array<float>} actionInfos 
+ *  六个关节的信息(位置和速度) 2 * n 表示第n个关节的位置，2 * n + 1 表示第n个关节的速度
+ *  [0, 0, 0, 0, 0.8760904248626792, 1.5355051064121865, 0, 0, 0, 0, 0, 0]
+ */
+function generateCmd(actionInfos, callbackFunc) {
+  let cmds = [];
+
+  for(let i = 0; i < actionInfos.length; i = i + 2) {
+  
+    console.log(i);
+    let location = actionInfos[i]; // 位置，弧度
+    let speed = actionInfos[i + 1]; // 速度，弧度每秒
+    let run_mode = 1
+    let motorId = i / 2 + 22; // 电机ID，从22开始
+
+    if(speed === 0) {
+      continue;
+    }
+
+    let runModeCmd = [0x12, 0x00, 0xfd, motorId, 0x05, 0x70, 0x00, 0x00, run_mode, 0x00, 0x00, 0x00]
+    let speedCmd = [0x12, 0x00, 0xfd, motorId, 0x17, 0x70, 0x00, 0x00, ...numToUnit8Array(speed)];
+    let locRefCmd = [0x12, 0x00, 0xfd, motorId, 0x16, 0x70, 0x00, 0x00, ...numToUnit8Array(location)];
+    console.log('runModeCmd:', runModeCmd, parse_cmd(runModeCmd));
+    console.log('speedCmd:', speedCmd, parse_cmd(speedCmd));
+    console.log('locRefCmd:', parse_cmd(locRefCmd));
+
+    callbackFunc(runModeCmd);
+    callbackFunc(speedCmd);
+    callbackFunc(locRefCmd);
+    
+  }
+
 }
 </script>
 <style scoped>

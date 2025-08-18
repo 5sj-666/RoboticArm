@@ -32,9 +32,13 @@ export const useMainStore = defineStore('main', {
      */
     addCmdsHistory(cmdObj) {
       let cmd = Array.from(cmdObj.data);
-      this.cmdsHistory.unshift({...cmdObj, parseStr: parse_cmd(cmd)?.parseStr || cmd, time: formatTime(new Date())});
+      if(cmdObj && cmdObj.msgType === 6) {
+        this.cmdsHistory.unshift({...cmdObj, parseStr: cmdObj.data, time: formatTime(new Date())});
+      }else {
+        this.cmdsHistory.unshift({...cmdObj, parseStr: parse_cmd(cmd)?.parseStr || cmd, time: formatTime(new Date())});
+      }
 
-      console.log('addCmdToHistory:', {...cmdObj, parseStr: parse_cmd(cmd)?.parseStr || cmd});
+      // console.log('addCmdToHistory:', {...cmdObj, parseStr: parse_cmd(cmd)?.parseStr || cmd});
       function formatTime(date) {
         const pad = n => n.toString().padStart(2, '0');
         return `${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`;

@@ -13,7 +13,7 @@ export const useBleStore = defineStore('BLE', {
       status: 'disconnected', // 枚举值[ connecting, connected, disconnecting, disconnected ] 待完善
       msgQueue: [], // 消息队列
       queueTimer: null,
-      sendInterval: 30, // 发送间隔，单位ms
+      sendInterval: 16, // 发送间隔，单位ms
       mainStore: null, 
       test: "BLE Store"
     }
@@ -191,7 +191,12 @@ export const useBleStore = defineStore('BLE', {
       console.log("ble.js发送指令", cmdFrame, '时间戳: ', new Date().getTime());
       let msgStatus = null;
       try {
-        BleCharacteristic.writeValueWithoutResponse(cmdFrame);
+        if(cmdFrame && cmdFrame.type ===6) {
+          BleCharacteristic.writeValueWithoutResponse(cmdFrame.msg);
+        }else {
+          BleCharacteristic.writeValueWithoutResponse(cmdFrame);
+        }
+        
         msgStatus = 'success';
       } catch (error) {
         msgStatus = 'fail';
@@ -202,7 +207,9 @@ export const useBleStore = defineStore('BLE', {
         // console.warn("ble.js记录消息历史");
         this.mainStore.addCmdsHistory({
           type: 'send',
-          data: cmdFrame,
+          data: cmdFrame.msg || cmdFrame,
+          msgType : cmdFrame.type || "", // 6表示这个数组里6个关节数据 
+          needParse: true,
           status: msgStatus
         });
       }

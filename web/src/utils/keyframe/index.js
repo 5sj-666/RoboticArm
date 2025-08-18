@@ -8,7 +8,6 @@
 
 
 import { Loc_Director } from '@/utils/CyberGear.js';
-import { parse } from 'vue/compiler-sfc';
 
 
 // import { useArmModelStore } from '@/stores/armModel.js'
