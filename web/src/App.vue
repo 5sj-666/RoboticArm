@@ -103,7 +103,7 @@
             0: { style: { color: '#ddd' }, label: '0 deg' },
             140: { style: { color: '#ddd' }, label: '140 deg' },
           }"
-          @change="rotateMotor({motorId: 22, limit_spd: 5, loc_ref: joint3})"
+          @change="rotateMotor({motorId: 23, limit_spd: 5, loc_ref: joint3})"
         />
       </div>
 
@@ -120,7 +120,7 @@
             0: { style: { color: '#ddd' }, label: '0 deg' },
             95: { style: { color: '#ddd' }, label: '95 deg' },
           }"
-          @change="rotateMotor({motorId: 23, limit_spd: 2, loc_ref: joint2})"
+          @change="rotateMotor({motorId: 22, limit_spd: 2, loc_ref: joint2})"
         />
       </div>
 
@@ -151,6 +151,12 @@
 
   <SetAction v-if="showSetAction" v-model:visible="showSetAction"/>
 
+  <div style="width: 100%; height: 100%; position: fixed; left: 0;top: 0; z-index: 10000; background:#FFF" >
+    <!-- <HotMatchSwiper /> -->
+    <docPage />
+  </div>
+  
+
 </section>
 
   
@@ -173,6 +179,10 @@ import { useMainStore } from '@/stores/index.js';
 import { useArmModelStore } from '@/stores/armModel.js';
 import { useBleStore } from '@/stores/ble.js';
 
+import HotMatchSwiper from '@/pages/HotMatchSwiper.vue';
+import testPage from '@/pages/test.vue';
+import docPage from '@/pages/docPage.vue';
+
 const mainStore = useMainStore();
 const armModelStore = useArmModelStore();
 const bleStore = useBleStore();
@@ -189,7 +199,7 @@ let showSetAction = ref(false);
 function setMotorInitialPoint() {
   // AA 01 00 08 06 00 01 05 01 00 00 00 00 00 00 00 7A
   for(let i = 21; i <= 23; i++) {
-    let cmdFrame = generateCMD('initialPoint', { motorId: 21});
+    let cmdFrame = generateCMD('initialPoint', { motorId: i});
     bleStore.sendMsg(cmdFrame, mainStore); 
   }
 }
@@ -316,6 +326,20 @@ function cmdVal(type, position) {
 function motorEnableChange(value) {
   console.log('--motorEnableChange: ', value);
   let cmdFrameArr = value ? enable_Director({motorId: 22}) : disable_Director({motorId: 22});
+  mainStore.setEnableMotor(value);
+  bleStore.sendMsg(cmdFrameArr[0], mainStore);
+  // 设置位置模式
+  bleStore.sendMsg(cmdFrameArr[1], mainStore);
+
+  console.log('--motorEnableChange: ', value);
+  cmdFrameArr = value ? enable_Director({motorId: 21}) : disable_Director({motorId: 21});
+  mainStore.setEnableMotor(value);
+  bleStore.sendMsg(cmdFrameArr[0], mainStore);
+  // 设置位置模式
+  bleStore.sendMsg(cmdFrameArr[1], mainStore);
+
+  console.log('--motorEnableChange: ', value);
+  cmdFrameArr = value ? enable_Director({motorId: 23}) : disable_Director({motorId: 23});
   mainStore.setEnableMotor(value);
   bleStore.sendMsg(cmdFrameArr[0], mainStore);
   // 设置位置模式

@@ -42,10 +42,6 @@
 </template>
 <script setup>
 import { computed, onMounted } from "vue";
-import {
-  moveToInitialPosition,
-  getAnimationCmds,
-} from "@/utils/keyframe/index.js";
 import { useMainStore } from "@/stores/index.js";
 import { useMotionStore } from "../stores/motions";
 import { useArmModelStore } from "@/stores/armModel.js";
@@ -75,28 +71,40 @@ function deleteMotion(action) {
 }
 
 function handlePrepare(action) {
-  // 你的准备逻辑
-  console.log("准备", action.name);
-  moveToInitialPosition(action, armModelStore, bleStore);
-  // debugger;
+  let {positions , embedMsg} = moveToInitialPosition(action);
+  armModelStore.setPosition(positions);
+
+  const float32Array = new Float32Array(embedMsg);
+  bleStore.sendMsg({type: 6, msg: float32Array});
 }
+/**
+ * @description 移动到初始位置
+ * @param action 
+ */
+function moveToInitialPosition (action) {
+  const positions = {};
+
+  action.joints.forEach((item) => {
+    positions[item.name] = (parseFloat(item.keyframes[0].location) ||  0) * Math.PI / 180;
+  });
+
+  let embedMsg = new Array(12).fill(0);
+  for(let i = 0; i < embedMsg.length; i = i + 2) {
+    embedMsg[i] = positions['joint' + (i / 2 + 1)] || 0; // 位置
+    embedMsg[i + 1] = 5; // 速度
+  }
+
+  return {positions, embedMsg};
+}
+
 function handleRun(action) {
 
-  // action;
-  // debugger;
 
   const motion = new BezierMotion({
     joints: action.joints,
-    onUpdate: (elapsed, progress) => {
-      // elapsed: 已过去时间(ms)
-      // progress: 贝塞尔运动进度(0~1)
-      // 这里可以更新物体位置
-      console.log('elapsed:', elapsed, 'progress:', progress);
-    }
+    onUpdate: (elapsed, progress) => {}
   });
   motion.start();
-
-  console.log("运行", action.name);
 }
 
 function simulatorCmd() {
@@ -142,46 +150,6 @@ class BezierMotion {
     this.isRunning = false;
   }
 
-  // _step(now) {
-  //   if (!this.isRunning) return;
-
-  //   // 计算当前帧间隔
-  //   let frameInterval = 0;
-  //   if (this.lastFrameTime !== null) {
-  //     frameInterval = now - this.lastFrameTime;
-  //     console.log('当前帧间隔:', frameInterval, 'ms');
-  //   }
-  //   this.lastFrameTime = now;
-    
-  //   const elapsed = now - this.startTime;
-  //   // const t = Math.min(elapsed / this.duration, 1);
-
-  //   let {positions, embedMsg}= getAllJointPosition({
-  //     elapsed, 
-  //     cursors: this.cursors, 
-  //     delta: this.delta, 
-  //     joints: this.joints, 
-  //     preFrameLocations: this.preFrameLocations, 
-  //     frameInterval
-  //   });
-
-  //   console.log("---动画函数执行: ", elapsed, positions, this.cursors, this.cursors.filter(item => item === 0).length, '--embedMsg: ', embedMsg);
-  //   armModelStore.setPosition(positions);
-    
-  //   if(this.cursors.filter(item => item === -1).length == this.joints.length) {
-  //     // debugger;
-  //     this.isRunning = false;
-  //     return;
-  //   } else {
-  //     requestAnimationFrame(this._step.bind(this));
-  //   }
-    
-  //   // 每帧回调
-  //   if (typeof this.onUpdate === 'function') {
-  //     this.onUpdate(elapsed);
-  //   }
-
-  // }
   _step(now) {
     if (!this.isRunning) return;
 
@@ -198,7 +166,7 @@ class BezierMotion {
     // 只有间隔大于等于目标间隔时才执行动画逻辑
     if (frameInterval >= targetInterval) {
       this.lastFrameTime = now;
-      console.log('当前帧间隔:', frameInterval, 'ms');
+      // console.log('当前帧间隔:', frameInterval, 'ms');
 
       const elapsed = now - this.startTime;
       let { positions, embedMsg } = getAllJointPosition({
@@ -209,7 +177,7 @@ class BezierMotion {
         preFrameLocations: this.preFrameLocations,
         frameInterval
       });
-      console.log("---动画函数执行: ", elapsed, positions, this.cursors, this.cursors.filter(item => item === 0).length, '--embedMsg: ', embedMsg);
+      // console.log("---动画函数执行: ", elapsed, positions, this.cursors, this.cursors.filter(item => item === 0).length, '--embedMsg: ', embedMsg);
  
       armModelStore.setPosition(positions);
       // 多关节数据在一个数组内发送
@@ -386,36 +354,8 @@ function bezierXToY(xTarget, p1, p2, epsilon = 1e-6, maxIter = 100) {
   );
 }
 
-  // 塞入三个指令: 设置模式, 设置速度,设置位置，
-  // let TWAI_id = new Array(4).fill(0);
-  // let TWAI_data = new Array(8).fill(0);
-  // enable: ({motorId}) => {
-  //       TWAI_id = [0x03, 0x00, 0xfd, motorId];
-  //     },
-  // 更改运行模式, 通信类型18
-  // run_mode: ({motorId, run_mode}) => {
-  //   TWAI_id = [0x12, 0x00, 0xfd, motorId];
-  //   TWAI_data = [0x05, 0x70, 0x00, 0x00, run_mode, 0x00, 0x00, 0x00];
-  // }
-  // 设置速度，通信类型18， limit_spd: [0 - 30]
-  // limit_spd: ({motorId, limit_spd}) => {
-  //   TWAI_id = [0x12, 0x00, 0xfd, motorId];
-  //   TWAI_data = [0x17, 0x70, 0x00, 0x00, ...numToUnit8Array(limit_spd)];
-  // },
-  // 设置要旋转的位置, 通信类型18
-  // loc_ref: ({motorId, loc_ref}) => {
-  //   TWAI_id = [0x12, 0x00, 0xfd, motorId];
-  //   TWAI_data = [0x16, 0x70, 0x00, 0x00, ...numToUnit8Array(loc_ref)];
-  // },
 
-onMounted(() => {
-  // generateCmd([0, 0, 0, 0, 0.8760904248626792, 1.5355051064121865, 0, 0, 0, 0, 0, 0], (cmd) => {
-  //   console.log('cmd:', cmd);
-  // });
-
-
-
-})
+onMounted(() => { })
 
 function numToUnit8Array(num) {
   // 创建一个长度为 4 的 ArrayBuffer

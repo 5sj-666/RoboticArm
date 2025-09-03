@@ -290,7 +290,7 @@ static void gap_event_handler(esp_gap_ble_cb_event_t event, esp_ble_gap_cb_param
 // int newest_con_id = 0;
 
 static void gatts_profile_a_event_handler(esp_gatts_cb_event_t event, esp_gatt_if_t gatts_if, esp_ble_gatts_cb_param_t *param) {
-    ESP_LOGI(GATTS_TAG,"a服务的事件函数处理");
+    // ESP_LOGI(GATTS_TAG,"a服务的事件函数处理");
 
     switch (event) {
     case ESP_GATTS_REG_EVT:
@@ -349,10 +349,10 @@ static void gatts_profile_a_event_handler(esp_gatts_cb_event_t event, esp_gatt_i
         break;
     }
     case ESP_GATTS_WRITE_EVT: {
-        ESP_LOGI(GATTS_TAG, "蓝牙写入事件 GATT_WRITE_EVT, conn_id %d, trans_id %" PRIu32 ", handle %d", param->write.conn_id, param->write.trans_id, param->write.handle);
+        // ESP_LOGI(GATTS_TAG, "蓝牙写入事件 GATT_WRITE_EVT, conn_id %d, trans_id %" PRIu32 ", handle %d", param->write.conn_id, param->write.trans_id, param->write.handle);
         esp_gatt_status_t status = ESP_GATT_OK;
 
-        ESP_LOGW(GATTS_TAG, "GATT_WRITE_EVT, value len %d, value :", param->write.len);
+        // ESP_LOGW(GATTS_TAG, "GATT_WRITE_EVT, value len %d, value :", param->write.len);
         esp_log_buffer_hex(GATTS_TAG, param->write.value, param->write.len);
 
         // for(int i = 0; i < param->write.len; i++) {
@@ -366,7 +366,7 @@ static void gatts_profile_a_event_handler(esp_gatts_cb_event_t event, esp_gatt_i
           // 计算 float 个数
           int float_count = len / sizeof(float);
 
-          printf("Received %d float(s):\n", float_count);
+          // printf("Received %d float(s):\n", float_count);
           float *floats = (float *)data;  // 直接转换为 float 指针
 
           for (int i = 0; i < float_count; i+=2) {
@@ -376,7 +376,7 @@ static void gatts_profile_a_event_handler(esp_gatts_cb_event_t event, esp_gatt_i
               // int run_mode = 1;
               int motorId = i / 2 + 21;          // 电机ID，从22开始
 
-              printf("蓝牙接收到的数组 motorId[%d] joint[%d] 位置= %f _ _ 速度%f \n", motorId, i/2 + 1, floats[i], floats[i+1]);
+              // printf("蓝牙接收到的数组 motorId[%d] joint[%d] 位置= %f _ _ 速度%f \n", motorId, i/2 + 1, floats[i], floats[i+1]);
 
 
               if (speed == 0) {
@@ -630,7 +630,7 @@ static void gatts_profile_a_event_handler(esp_gatts_cb_event_t event, esp_gatt_i
         break;
     // profile配置事件
     case ESP_GATTS_CONF_EVT:
-        ESP_LOGI(GATTS_TAG, "gatts配置事件 ESP_GATTS_CONF_EVT, status %d attr_handle %d", param->conf.status, param->conf.handle);
+        // ESP_LOGI(GATTS_TAG, "gatts配置事件 ESP_GATTS_CONF_EVT, status %d attr_handle %d", param->conf.status, param->conf.handle);
         if (param->conf.status != ESP_GATT_OK){
             esp_log_buffer_hex(GATTS_TAG, param->conf.value, param->conf.len);
         }

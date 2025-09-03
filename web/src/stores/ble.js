@@ -13,7 +13,7 @@ export const useBleStore = defineStore('BLE', {
       status: 'disconnected', // 枚举值[ connecting, connected, disconnecting, disconnected ] 待完善
       msgQueue: [], // 消息队列
       queueTimer: null,
-      sendInterval: 16, // 发送间隔，单位ms
+      sendInterval: 0, // 发送间隔，单位ms 16
       mainStore: null, 
       test: "BLE Store"
     }
@@ -94,7 +94,7 @@ export const useBleStore = defineStore('BLE', {
       // 接收蓝牙服务发出的通知
       this.characteristic.addEventListener("characteristicvaluechanged", (e) => {
         try {
-          console.log("蓝牙Notification通知: ", e, "值:");
+          // console.log("蓝牙Notification通知: ", e, "值:");
           let CAN_frame_data = Array.from(new Uint8Array(e.target.value.buffer));
           // recordCmd.value.push({ type: 'receive', data: CAN_frame_data, status: 'received' });
           this.mainStore.addCmdsHistory({ type: 'receive', data: CAN_frame_data, status: 'received' });
@@ -188,7 +188,7 @@ export const useBleStore = defineStore('BLE', {
       this.startQueue(); // 确保队列已启动
     },
     _sendNow(cmdFrame) {
-      console.log("ble.js发送指令", cmdFrame, '时间戳: ', new Date().getTime());
+      // console.log("ble.js发送指令", cmdFrame, '时间戳: ', new Date().getTime());
       let msgStatus = null;
       try {
         if(cmdFrame && cmdFrame.type ===6) {

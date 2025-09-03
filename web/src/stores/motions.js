@@ -157,8 +157,8 @@ export const useMotionStore = defineStore('motion', {
           motorId: joint.value,
           keyframes: [
             {
-              time: "0",
-              location: "0",
+              time: 0,
+              location: 0,
               timingFunction: "linear",
               motorId: joint.value,
             },
