@@ -1,0 +1,158 @@
+<?xml version="1.0"?>
+<robot name="robotic_arm">
+  <link name="base_link">
+    <visual>
+      <geometry>
+        <mesh filename="link0.glb"/>
+      </geometry>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+    </visual>
+    <!-- <collision>
+      <geometry>
+        <box size="1 1 1" />
+      </geometry>
+    </collision>
+    <inertial>
+      <mass value="2.0" />
+      <inertia ixx="0.01" ixy="0.0" ixz="0.0" iyy="0.01" iyz="0.0" izz="0.01" />
+    </inertial> -->
+  </link>
+
+  <joint name="joint_1" type="revolute">
+    <parent link="base_link" />
+    <child link="link_1" />
+    <!-- <origin xyz="0 0.2 0" rpy="0 0 0" /> -->
+    <origin xyz="0 0.04 0" rpy="0 0 0" />
+    <axis xyz="0 1 0" />
+    <limit lower="-3.14" upper="3.14" effort="10.0" velocity="1.0" />
+  </joint>
+
+  <link name="link_1">
+    <visual>
+      <geometry>
+        <mesh filename="link1.glb" />
+        <!-- <box size="1 1 1"/> -->
+      </geometry>
+      <!-- <material name="base_metal"/> -->
+      <origin xyz="0 0 0" rpy="0 0 0" />
+    </visual>
+    <!-- <collision>
+      <geometry>
+        <box size="1 1 1" />
+      </geometry>
+    </collision>
+    <inertial>
+      <mass value="2.0" />
+      <inertia ixx="0.01" ixy="0.0" ixz="0.0" iyy="0.01" iyz="0.0" izz="0.01" />
+    </inertial> -->
+  </link>
+
+  <joint name="joint_2" type="revolute">
+    <parent link="link_1" />
+    <child link="link_2" />
+    <!-- <origin xyz="0 0.253 -0.5" rpy="1.57 0  1.57 " /> -->
+    <origin xyz="0 0.0506 -0.1" rpy="1.57 0  1.57 " />
+    <axis xyz="0 1 0" />
+    <limit lower="-3.14" upper="3.14" effort="10.0" velocity="1.0" />
+  </joint>
+
+   <link name="link_2">
+    <visual>
+      <geometry>
+        <mesh filename="link2.glb" />
+      </geometry>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+    </visual>
+    <!-- <collision>
+      <geometry>
+        <box size="1 1 1" />
+      </geometry>
+    </collision>
+    <inertial>
+      <mass value="2.0" />
+      <inertia ixx="0.01" ixy="0.0" ixz="0.0" iyy="0.01" iyz="0.0" izz="0.01" />
+    </inertial> -->
+  </link>
+
+  <joint name="joint_3" type="revolute">
+    <parent link="link_2" />
+    <child link="link_3" />
+    <!-- <origin xyz="1.5 0.185 0" rpy="0 0 0" /> -->
+    <origin xyz="0.3 0.037 0" rpy="0 0 0" />
+    <axis xyz="0 1 0" />
+    <limit lower="-3.14" upper="3.14" effort="10.0" velocity="1.0" />
+  </joint>
+
+  <link name="link_3">
+    <visual>
+      <geometry>
+        <mesh filename="link3.glb" />
+      </geometry>
+      <origin xyz="0 0 0" rpy="0 2.69 0" />
+    </visual>
+    <!-- <collision>
+      <geometry>
+        <box size="1 1 1" />
+      </geometry>
+    </collision>
+    <inertial>
+      <mass value="2.0" />
+      <inertia ixx="0.01" ixy="0.0" ixz="0.0" iyy="0.01" iyz="0.0" izz="0.01" />
+    </inertial> -->
+  </link>
+
+  <joint name="joint_4" type="revolute">
+    <parent link="link_3" />
+    <child link="link_4" />
+    <!-- <origin xyz="0.37 0.325 0.175" rpy="0 0 0" /> -->
+    <origin xyz="0.074 0.065 0.035" rpy="0 0 0" />
+    <axis xyz="1 0 0" />
+    <limit lower="-3.14" upper="3.14" effort="10.0" velocity="1.0" />
+  </joint>
+
+  <link name="link_4">
+    <visual>
+      <geometry>
+        <mesh filename="link4.glb" />
+      </geometry>
+      <!-- <origin xyz="1.2 0.35 0" rpy="3.14 3.14 0" /> -->
+      <origin xyz="0.24 0.07 0" rpy="3.14 3.14 0" />
+    </visual>
+    <!-- <collision>
+      <geometry>
+        <box size="1 1 1" />
+      </geometry>
+    </collision>
+    <inertial>
+      <mass value="2.0" />
+      <inertia ixx="0.01" ixy="0.0" ixz="0.0" iyy="0.01" iyz="0.0" izz="0.01" />
+    </inertial> -->
+  </link>
+
+   <joint name="joint_5" type="revolute">
+    <parent link="link_4" />
+    <child link="link_5" />
+    <!-- <origin xyz="1.2 0.195 0 " rpy="0 0 0" /> -->
+    <origin xyz="0.24 0.039 0" rpy="0 0 0" />
+    <axis xyz="0 1 0" />
+    <limit lower="-3.14" upper="3.14" effort="10.0" velocity="1.0" />
+  </joint>
+
+  <link name="link_5">
+    <visual>
+      <geometry>
+        <mesh filename="link5.glb" />
+      </geometry>
+      <origin xyz="0 0 0" rpy="3.14 0 0" />
+    </visual>
+    <!-- <collision>
+      <geometry>
+        <box size="1 1 1" />
+      </geometry>
+    </collision>
+    <inertial>
+      <mass value="2.0" />
+      <inertia ixx="0.01" ixy="0.0" ixz="0.0" iyy="0.01" iyz="0.0" izz="0.01" />
+    </inertial> -->
+  </link>
+</robot>

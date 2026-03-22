@@ -1,8 +1,8 @@
 import * as THREE from 'three'//导入three.js核心库
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls' //导入轨道控制器
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader'//导入GLTF模型加载器
-import { TransformControls } from 'three/addons/controls/TransformControls.js'; // 控制
-
+// import { TransformControls } from 'three/addons/controls/TransformControls.js'; // 控制
+import URDFLoader from 'urdf-loader'; // URDF 加载器
 
 class motor3d {
   constructor(selector) {    
@@ -14,8 +14,6 @@ class motor3d {
     // this.container;
     // const { width, height } = this.container.getBoundingClientRect()
     // debugger;
-    
-
     this.scene;
     this.camera;
     this.renderer;
@@ -29,7 +27,7 @@ class motor3d {
     this.joint4 = 0;
     this.joint5 = 0;
     var that = this;
-
+    this.robot = null;
   }
 
   async init() {
@@ -76,9 +74,7 @@ class motor3d {
 
   initCamera() {
     // this.camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 100)
-    this.camera = new THREE.PerspectiveCamera(75, this.width / this.height, 0.1, 100)
-    // this.camera.position.set(1.5, 2, 3)
-    this.camera.position.set(3, 2, 4.5)
+    this.camera = new THREE.PerspectiveCamera(45, this.width / this.height, 1, 100)
 }
 
 initRender() {
@@ -104,145 +100,85 @@ initRender() {
   initControls() {
     this.orbit = new OrbitControls(this.camera,this.renderer.domElement)
     // 开启控制器的阻尼效果
-    // this.orbit.enableDamping = true
+    this.orbit.enableDamping = true;
     // 使用控制器
-    this.orbit.update()
+    this.camera.position.set(-1.58, -1.31, 1.14);
+    this.orbit.target.set(0.08, -1.77, -0.19);
+    this.camera.lookAt(0.08, -1.77, -0.19);
+    this.orbit.update();
+
+     // 监听相机变化，实时打印位置和朝向
+    // this.orbit.addEventListener('change', () => {
+    //   const pos = this.camera.position;
+    //   const target = this.orbit.target;
+    //   console.log(
+    //     `camera.position: x=${pos.x.toFixed(2)}, y=${pos.y.toFixed(2)}, z=${pos.z.toFixed(2)}`
+    //   );
+    //   console.log(
+    //     `camera.lookAt: x=${target.x.toFixed(2)}, y=${target.y.toFixed(2)}, z=${target.z.toFixed(2)}`
+    //   );
+    // });
   }
 
   onWindowResize() {
+      this.width = window.innerWidth;
+    this.height = window.innerHeight;
     // this.camera.aspect = window.innerWidth / window.innerHeight
-    this.camera.aspect = this.width / this.height
-    this.camera.updateProjectionMatrix()//更新矩阵，将3d内容投射到2d画面上转换
+    this.camera.aspect = this.width / this.height;
+    this.renderer.setSize(this.width, this.height);
+    this.camera.updateProjectionMatrix();//更新矩阵，将3d内容投射到2d画面上转换
     // this.renderer.setSize(window.innerWidth,window.innerHeight)
-    this.renderer.setSize(this.width, this.height)
   }
 
-
   async initMesh() {
-
-    // let cyberGear = await this.addGLTFModel('cybergearmotor.stp.glb', 'cyber_gear');
-    let zero = await this.addGLTFModel('zero.glb', 'zero');
-    // cyberGear.add(new THREE.AxesHelper(2));
-
-    var oneWrapper = new THREE.Object3D();
-    oneWrapper.position.x = 0.5;
-    oneWrapper.position.y = 0.4;
-    // oneWrapper.position.z = 1;
-    this.scene.add(oneWrapper);
-    // oneWrapper.add(new THREE.AxesHelper(2));
-    let one = await this.addGLTFModel('one.glb', 'one');
-
-    // 
-    var twoWrapper = new THREE.Object3D();
-    twoWrapper.position.x = 0;
-    twoWrapper.position.y =  0.25;
-    twoWrapper.position.z =  -0.32;
-    this.scene.add(twoWrapper);
-    // twoWrapper.add(new THREE.AxesHelper(2));
-    let two = await this.addGLTFModel('two.glb', 'two');
-
-
-    // 
-    var threeWrapper = new THREE.Object3D();
-    threeWrapper.position.x = 0;
-    threeWrapper.position.y = 1.5;
-    threeWrapper.position.z = -0.02;
-    this.scene.add(threeWrapper);
-    // threeWrapper.add(new THREE.AxesHelper(2));
-    let three = await this.addGLTFModel('three.glb', 'three');
-
-    //
-    var fourWrapper = new THREE.Object3D();
-    fourWrapper.position.x = 0.175;
-    fourWrapper.position.y = 0.32;
-    fourWrapper.position.z =0.32;
-    this.scene.add(fourWrapper);
-    // fourWrapper.add(new THREE.AxesHelper(2));
-    let four = await this.addGLTFModel('four.glb', 'four');
-
-    //
-    var fiveWrapper = new THREE.Object3D();
-    fiveWrapper.position.x = 0;
-    fiveWrapper.position.y = 1.25;
-    fiveWrapper.position.z = 0.197;
-    this.scene.add(fiveWrapper);
-    // fiveWrapper.add(new THREE.AxesHelper(2));
-    let five = await this.addGLTFModel('five.glb', 'five');
-
-
+    this.addURDFModel('3dModules/roboticArm.urdf');
     let render = () => {
       requestAnimationFrame(render);
-        oneWrapper.add(one.scene);
-        oneWrapper.add(twoWrapper);
-
-        twoWrapper.add(two.scene);
-        twoWrapper.add(threeWrapper);
-        
-        threeWrapper.add(three.scene);
-        threeWrapper.add(fourWrapper);
-
-        fourWrapper.add(four.scene);
-        fourWrapper.add(fiveWrapper);
-
-        fiveWrapper.add(five.scene);
-
-
-        oneWrapper.rotation.y = this.joint1;
-        twoWrapper.rotation.z = this.joint2;
-        threeWrapper.rotation.z = this.joint3;
-
-        fourWrapper.rotation.y = this.joint4;
-        fiveWrapper.rotation.z = this.joint5;
-
-        this.renderer.render(this.scene, this.camera);
+      if(this.robot != null) {
+        this.robot.setJointValue( 'joint_1', this.joint1 );
+        this.robot.setJointValue( 'joint_2', this.joint2 );
+        this.robot.setJointValue( 'joint_3', this.joint3 );
+        this.robot.setJointValue( 'joint_4', this.joint4 );
+        this.robot.setJointValue( 'joint_5', this.joint5 );
+      }
     }
 
     render();
   }
 
-  // 加载模型
-  addGLTFModel(modelName, type) { 
-    return new Promise((resolve,reject) => {
-      const loader = new GLTFLoader().setPath('3dModules/')
-      loader.load(modelName,(gltf) =>{
-        // console.log('模型加载成功: ', gltf);
-        
-        this.scene.add(gltf.scene);
-        initGLTF.bind(this)(gltf, type);
+  addURDFModel(urdfPath = '3dModules/roboticArm.urdf') {
+    const manager = new THREE.LoadingManager();
+    const loader = new URDFLoader(manager);
 
-        resolve(gltf);
-      });
-    });
+    loader.loadMeshCb = function(path, manager, onComplete) {
+      const gltfLoader = new GLTFLoader(manager);
+      gltfLoader.load(
+        path,
+        result => {
+          onComplete(result.scene);
+        },
+        undefined,
+        err => {
+          onComplete(null, err);
+        }
+      );
+    };
 
-    // 初始化模型的位置
-    function initGLTF (gltf, type ) {
-      gltf.scene.scale.set(5,5,5);
-
-      if(type === 'zero') {
-        gltf.scene.translateX(0.5);
-      }else if(type === 'one') {
-        gltf.scene.translateX(0.5);
-        gltf.scene.translateX(-0.5);
-
-      }else if(type === 'two') {
-        gltf.scene.translateZ(-0.2);
-        let oneDegree = Math.PI / 180;
-        gltf.scene.rotation.set(oneDegree * 90, oneDegree * 90, oneDegree * 0);
-
-      }else if(type === 'three') {
-        gltf.scene.rotation.set(Math.PI / 2, Math.PI / 180 * -116, 0);
-      }else if(type === 'four') {
-        gltf.scene.rotation.set(0, Math.PI / 180 * 90,  Math.PI / 180 * -90);
-        gltf.scene.translateX(-1.25);
-        gltf.scene.translateY(-0.35);
+    loader.load(
+      urdfPath,
+      robot => {
+        this.robot = robot;
+        this.robot.position.set(0, 0, 0);
+        this.scene.add(this.robot);
+      },
+      progress => {
+        console.log('urdf: progress' + progress);
+      },
+      err => {
+        console.log('urdf: err' + err);
       }
-      else if(type === 'five') {
-        gltf.scene.rotation.set(Math.PI / 180  * 0, Math.PI / 180 * 270,  Math.PI / 180 * 90);
-        // let oneDegree = Math.PI / 180;
-        // gltf.scene.rotation(oneDegree * 0, oneDegree * 90, oneDegree * 270);
-      }
-
-    } 
+    );
   }
+
 } 
 export default motor3d
