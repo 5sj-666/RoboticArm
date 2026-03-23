@@ -1,7 +1,5 @@
 import * as THREE from 'three'//导入three.js核心库
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls' //导入轨道控制器
-import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader'//导入GLTF模型加载器
-// import { TransformControls } from 'three/addons/controls/TransformControls.js'; // 控制
 import URDFLoader from 'urdf-loader'; // URDF 加载器
 
 class motor3d {
@@ -74,7 +72,7 @@ class motor3d {
 
   initCamera() {
     // this.camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 100)
-    this.camera = new THREE.PerspectiveCamera(45, this.width / this.height, 1, 100)
+    this.camera = new THREE.PerspectiveCamera(45, this.width / this.height, 0.1, 100)
 }
 
 initRender() {
@@ -149,20 +147,6 @@ initRender() {
   addURDFModel(urdfPath = '3dModules/roboticArm.urdf') {
     const manager = new THREE.LoadingManager();
     const loader = new URDFLoader(manager);
-
-    loader.loadMeshCb = function(path, manager, onComplete) {
-      const gltfLoader = new GLTFLoader(manager);
-      gltfLoader.load(
-        path,
-        result => {
-          onComplete(result.scene);
-        },
-        undefined,
-        err => {
-          onComplete(null, err);
-        }
-      );
-    };
 
     loader.load(
       urdfPath,
